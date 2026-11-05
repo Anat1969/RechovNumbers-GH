@@ -7,6 +7,7 @@ export interface Metrics {
   shop100?: number; cross100?: number; bench100?: number; tree100?: number; lamp100?: number;
   bus300?: number; busdist?: number; parkdist?: number; svc400?: number; edu400?: number;
   class?: string; maxspeed?: number; lanes?: number; cycle?: boolean; sidewalk?: boolean;
+  geo?: 'outside' | 'trimmed';
   plan?: { id: string; title: string; status: string; number: string | null; points: number | null; street?: Record<string, number | null> };
   votes?: { n: number; avg: number };
 }
@@ -14,6 +15,15 @@ export interface Street { code: number; name: string; quarter_id: string | null;
 
 /** סף הכיסוי: פרמטר נכנס לציון רק אם יש לו ערך ביותר מרבע מרחובות העיר. מתחתיו, אפס הוא כנראה "לא מופה". */
 export const COVERAGE_MIN = 0.25;
+/** רחוב קצר מזה לא מדורג: אורך בלוק ומקצב בניינים לא אומרים כלום על קטע של 100 מ'. */
+export const MIN_LEN = 120;
+
+/** למה רחוב לא מקבל ציון. null = מדורג. */
+export function unranked(m: Metrics): string | null {
+  if (m.geo === 'outside') return 'קו הרחוב שנמצא במפה רחוק מהרובע שהעירייה שייכה אליו. כנראה רחוב אחר באותו שם, ולכן הוא לא מדורג.';
+  if ((m.len ?? 0) < MIN_LEN) return `הקטע שנמדד קצר מ-${MIN_LEN} מ', ולכן הוא לא מדורג.`;
+  return null;
+}
 
 const CLASS: Record<string, { he: string; s: number }> = {
   living_street: { he: 'רחוב משולב', s: 1 }, pedestrian: { he: 'מדרחוב', s: 1 }, footway: { he: 'שביל הולכי רגל', s: 1 },
@@ -188,7 +198,8 @@ export function buildModel(raw: Street[]): Model {
       const ss = entering.filter((p) => CRIT[p.criterion].family === f.key).map((p) => scores[p.key]).filter((x): x is number => x != null);
       return [f.key, ss.length ? ss.reduce((a, b) => a + b, 0) / ss.length : null];
     })) as Record<FamilyKey, number | null>;
-    return { s, values, scores, ind, points, total: max ? Math.round((points / max) * 100) : null, families };
+    const ok = !unranked(s.m);
+    return { s, values, scores, ind, points, total: ok && max ? Math.round((points / max) * 100) : null, families };
   });
   return { streets, stats, entering, measuredInd, maxPoints, byCode: Object.fromEntries(streets.map((x) => [x.s.code, x])) };
 }
