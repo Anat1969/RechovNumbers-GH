@@ -48,6 +48,8 @@ export interface Param {
   fmt: (v: number, m: Metrics) => string;
   target: string; rule: string; basis: string; source: string; limit: string;
   higherBetter: boolean;
+  /** לא נכנס לציון גם בכיסוי גבוה: היעדר תיוג אינו היעדר הדבר עצמו. */
+  displayOnly?: boolean;
 }
 
 const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('he-IL');
@@ -138,7 +140,7 @@ export const PARAMS: Param[] = [
     basis: 'שכונה 360, התייעלות תאורת רחוב וזיהום אור לילי.', source: 'OpenStreetMap.', limit: 'כמעט לא ממופה. דרושה שכבת התאורה העירונית.',
   },
   {
-    key: 'sidewalk', label: 'מדרכה מתועדת', unit: '', criterion: 'row_split', indicators: ['b01'],
+    key: 'sidewalk', label: 'מדרכה מתועדת', displayOnly: true, unit: '', criterion: 'row_split', indicators: ['b01'],
     read: (m) => (m.sidewalk == null ? null : m.sidewalk ? 1 : 0), present: (m) => m.sidewalk === true, score: (v) => v, fmt: (v) => (v ? 'כן' : 'לא תועדה'), higherBetter: true,
     target: 'מדרכה בשני הצדדים', rule: "מדרכה מתויגת על הדרך, או שביל מדרכה עד 15 מ'.",
     basis: 'הרחובות הטובים: חלוקת זכות הדרך.', source: 'OpenStreetMap.', limit: 'היעדר תיוג אינו היעדר מדרכה.',
@@ -171,7 +173,7 @@ export function buildModel(raw: Street[]): Model {
   for (const p of PARAMS) {
     const vals = raw.map((s) => p.read(s.m)).filter((v): v is number => v != null).sort((a, b) => a - b);
     const coverage = raw.length ? raw.filter((s) => p.present(s.m)).length / raw.length : 0;
-    stats[p.key] = { key: p.key, coverage, enters: coverage >= COVERAGE_MIN, sorted: vals };
+    stats[p.key] = { key: p.key, coverage, enters: coverage >= COVERAGE_MIN && !p.displayOnly, sorted: vals };
   }
   const entering = PARAMS.filter((p) => stats[p.key].enters);
   const measuredInd = [...new Set(entering.flatMap((p) => p.indicators))];

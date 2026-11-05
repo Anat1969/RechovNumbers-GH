@@ -50,6 +50,7 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
   const tabs: [string, string, Route['page'][]][] = [
     ['העיר', '#/', ['home']],
     ['השכונה', `#/q/${lastQ}`, ['quarter', 'street']],
+    ['פעולות', '#/a', ['actions']],
     ['ההצלבה', '#/x', ['cross']],
     ['איך מודדים', '#/m', ['method']],
   ];

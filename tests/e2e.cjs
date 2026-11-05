@@ -39,6 +39,11 @@ async function mock(p) {
     ok(!(await p.locator('header >> text=העתקת קישור').first().isVisible().catch(() => false)), 'אין כפתורי פיתוח חופשיים בסרגל');
     ok(await p.locator('.num').count() > 10, 'מספרים מודגשים אוטומטית');
     ok(await p.locator('mark.insight').count() >= 1, 'מרקר תובנה בדף הבית');
+    ok(await p.locator('.prof-row').count() >= 6, 'בית, מקרו: פרופיל העיר לפי פרמטר');
+    ok(await p.locator('.hist rect').count() === 10, 'בית, מקרו: התפלגות הציונים');
+    ok(await p.locator('.compare .cmp-row').count() >= 6, 'בית, מיקרו: השוואת שני רחובות');
+    ok(await p.locator('.tier').count() === 3, 'בית: סולם פעולה בשלוש דרגות');
+    ok(await p.locator('.gap').count() >= 6, 'בית: מה עוד לא נמדד ומאיפה');
 
     await p.locator('.tile').first().click();
     await p.waitForSelector('.rank .row');
@@ -46,6 +51,15 @@ async function mock(p) {
     const rows = await p.locator('.rank .row').count();
     ok(rows > 3, `רובע: דירוג עם ${rows} רחובות`);
     ok(await p.locator('.map-wrap path.street').count() === rows, 'רובע: כל רחוב מדורג מצויר במפה');
+    ok(await p.locator('.scalebar').isVisible() && await p.locator('svg.north').isVisible(), 'מפה: קנה מידה וחץ צפון');
+    ok(await p.locator('.map-wrap textPath').count() >= 2, 'מפה: שמות רחובות לאורך הציר');
+    ok(await p.locator('.map-wrap .street-case').count() === rows, 'מפה: קו מתאר לכל רחוב');
+    await p.getByRole('tab', { name: 'ממצאים' }).click();
+    ok(p.url().includes('t=story') && await p.locator('.rel-row').count() >= 6, 'רובע: לשונית ממצאים, הרובע מול העיר');
+    await p.getByRole('tab', { name: 'פעולות' }).click();
+    ok(await p.locator('.side-story .tone').count() >= 1, 'רובע: לשונית פעולות');
+    await p.getByRole('tab', { name: 'דירוג' }).click();
+    await p.waitForSelector('.rank .row');
     const scores = await p.locator('.rank .score-pill').allInnerTexts();
     ok(scores.every((s, i) => i === 0 || +scores[i - 1] >= +s), 'הדירוג ממוין מהגבוה לנמוך');
 
@@ -77,6 +91,7 @@ async function mock(p) {
     await p.locator('.ptable tbody tr').first().click();
     ok((await p.locator('.detail').innerText()).includes('איך חושב'), 'דף רחוב: לחיצה על פרמטר מסבירה איך חושב');
     ok(await p.locator('.ind-row').count() >= 20, 'דף רחוב: מדדי שכונה 360 שנוגעים ברחוב');
+    ok(await p.locator('.street-acts .mini-h').isVisible(), 'דף רחוב: למה הציון הזה ומה עושים');
 
     await p.getByLabel('חיפוש רחוב').fill('המעפילים');
     await p.waitForSelector('.results button');
@@ -94,10 +109,18 @@ async function mock(p) {
     await p.locator('.matrix th.colh').nth(30).click();
     ok((await p.locator('.detail').innerText()).includes('נקודות'), 'הצלבה: לחיצה על מדד מציגה הסבר');
 
+    await p.locator('.tabs').getByRole('button', { name: 'פעולות' }).click();
+    await p.waitForSelector('.act-card');
+    ok(await p.locator('.tier').count() === 3 && await p.locator('.act-card').count() >= 3, 'פעולות: שלוש דרגות וכרטיסי פעולה');
+    await p.locator('.chips .chip-t').first().click();
+    ok(p.url().includes('q=q-a'), 'פעולות: סינון לפי רובע נשמר בכתובת');
+    ok(await p.locator('.guides li').count() === 13, 'פעולות: הנחיות לתכנון חדש לכל פרמטר');
     await p.locator('.tabs').getByRole('button', { name: 'איך מודדים' }).click();
     await p.waitForSelector('.method .card');
     ok(await p.locator('.method .card').count() === 13, 'שיטה: כרטיס לכל פרמטר');
     ok(await p.locator('.tag-in').count() >= 6, 'שיטה: פרמטרים שבציון מסומנים');
+    ok(await p.locator('.basis-key .card').count() === 4, 'שיטה: ארבע רמות בסיס ליעדים');
+    ok(await p.locator('.gaps-table tbody tr').count() >= 8, 'שיטה: טבלת מה חסר ומאיפה');
 
     await p.locator('.brand').click();
     await p.waitForSelector('.tile');
@@ -115,7 +138,7 @@ async function mock(p) {
       const m = await b.newPage({ viewport: vp, reducedMotion: 'reduce' });
       await mock(m);
       m.on('pageerror', (e) => errors.push(e.message));
-      for (const h of ['', '#/q/q-a', '#/s/161', '#/x', '#/m']) {
+      for (const h of ['', '#/q/q-a', '#/q/q-a?t=story', '#/s/161', '#/a', '#/x', '#/m']) {
         await m.goto(BASE + h, { waitUntil: 'networkidle' });
         await m.waitForTimeout(500);
         const hs = await m.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);

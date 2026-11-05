@@ -10,6 +10,7 @@ import Quarter from './pages/Quarter';
 import StreetPage from './pages/StreetPage';
 import Cross from './pages/Cross';
 import Method from './pages/Method';
+import Actions from './pages/Actions';
 
 function downloadCsv(rows: (string | number | null)[][], name: string) {
   const csv = '﻿' + rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -40,7 +41,7 @@ export default function App() {
   useEffect(() => {
     const q = route.page === 'quarter' && route.id ? QMAP[route.id]?.name : null;
     const s = route.page === 'street' && model ? model.byCode[Number(route.id)]?.s.name : null;
-    document.title = (s ?? q ?? ({ cross: 'ההצלבה', method: 'איך מודדים' } as Record<string, string>)[route.page] ?? '') + (s || q || route.page === 'cross' || route.page === 'method' ? ' · ' : '') + 'רחוב טוב במספרים';
+    document.title = (s ?? q ?? ({ cross: 'ההצלבה', method: 'איך מודדים', actions: 'תוכנית פעולה' } as Record<string, string>)[route.page] ?? '') + (s || q || ['cross', 'method', 'actions'].includes(route.page) ? ' · ' : '') + 'רחוב טוב במספרים';
   }, [route, model]);
 
   const menu: MenuItem[] = useMemo(() => {
@@ -67,6 +68,7 @@ export default function App() {
   else if (route.page === 'quarter') page = <Quarter model={model} route={route} />;
   else if (route.page === 'street') page = <StreetPage model={model} route={route} />;
   else if (route.page === 'cross') page = <Cross model={model} />;
+  else if (route.page === 'actions') page = <Actions model={model} route={route} />;
   else if (route.page === 'method') page = <Method model={model} takenAt={data!.taken_at} source={data!.source} />;
   else page = <Home model={model} />;
 

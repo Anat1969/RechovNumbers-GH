@@ -8,6 +8,8 @@ import { fmtVal } from '../lib/insight';
 import { go, type Route } from '../lib/route';
 import StreetMap from '../components/StreetMap';
 import Rich from '../components/Rich';
+import { streetStory } from '../lib/story';
+import { TIERS } from '../lib/actions';
 
 const STATUS_HE: Record<string, string> = { planning: 'בתכנון', approved: 'מאושרת', permit: 'בהיתר', construction: 'בביצוע', completed: 'הושלמה' };
 
@@ -29,6 +31,7 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
   const touched = [...new Set(Object.values(CROSS).flat())].map((id) => IND[id]).sort((a, b) => a.id.localeCompare(b.id));
   const plan = x.s.m.plan;
   const sel = open ? PARAMS.find((p) => p.key === open) : null;
+  const story = streetStory(model, x);
 
   return (
     <main className="body" style={{ gridTemplateRows: 'auto minmax(0,1fr)' }}>
@@ -116,11 +119,22 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
 
         <section className="panel" aria-label="הרחוב במפה ובהקשר">
           <div className="panel-h"><h2>הרחוב ברובע</h2></div>
-          <div style={{ flex: 1, minHeight: 180, display: 'flex' }}>
+          <div style={{ flex: 1, minHeight: 150, display: 'flex' }}>
             <StreetMap
               items={(sum?.streets ?? [x]).map((y) => ({ s: y.s, color: y.s.code === x.s.code ? scoreColor(x.total) : '#D9D8D3', label: y.s.code === x.s.code, weight: y.s.code === x.s.code ? 9 : 0, tip: `${y.s.name}: ${y.total}` }))}
               selected={x.s.code} onSelect={(c) => go(`#/s/${c}`)} label={`${x.s.name} ברובע`}
             />
+          </div>
+          <div className="pick street-acts" style={{ borderTop: '1px solid var(--rule)' }}>
+            <h3 className="mini-h" style={{ margin: 0 }}>למה הציון הזה, ומה עושים</h3>
+            {story.lines.map((l, i) => <Rich key={i} as="p">{l}</Rich>)}
+            {story.acts.slice(0, 3).map((a) => (
+              <div key={a.p.key} className={`tone ${TIERS[a.tier].tone}`}>
+                <h4>{TIERS[a.tier].title} · {a.p.label}</h4>
+                <p>{a.text}</p>
+                <p className="src">{a.who} · עד {a.gap} נקודות</p>
+              </div>
+            ))}
           </div>
           <div className="pick" style={{ borderTop: '1px solid var(--rule)', borderBottom: 0 }}>
             {plan ? (

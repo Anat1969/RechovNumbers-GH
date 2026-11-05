@@ -8,6 +8,8 @@ import { distill, type Distilled } from '../lib/data';
 import { go, setParam, type Route } from '../lib/route';
 import StreetMap from '../components/StreetMap';
 import Rich from '../components/Rich';
+import { actionPlan, quarterStory } from '../lib/story';
+import { TIERS } from '../lib/actions';
 
 export default function Quarter({ model, route }: { model: Model; route: Route }) {
   const qid = route.id && QMAP[route.id] ? route.id : 'q-a';
@@ -20,6 +22,9 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
   useEffect(() => { try { localStorage.setItem('rn-last-q', qid); } catch { /* פרטי */ } setAi({ state: 'idle' }); }, [qid]);
 
   const sum = useMemo(() => summarize(model, [qid], qid), [model, qid]);
+  const story = useMemo(() => quarterStory(model, qid), [model, qid]);
+  const plan = useMemo(() => actionPlan(model, sum.streets), [model, sum]);
+  const tab = (route.q.get('t') ?? 'rank') as 'rank' | 'story' | 'act';
   const counts = useMemo(() => Object.fromEntries(QUARTERS.map((x) => [x.id, model.streets.filter((s) => s.s.quarter_id === x.id && s.total != null).length])), [model]);
   const a = answers(sum, q.name);
   const picked = sel != null ? model.byCode[sel] : null;
@@ -93,8 +98,8 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
               legend={<>
                 <span>{colorBy ? `${colorBy.label}: ציון מול היעד` : 'ציון רחוב, 0 עד 100'}</span>
                 <span className="ramp" />
-                <span className="ends"><span>חזק</span><span>חלש</span></span>
-                <span className="muted">קו אפור: רחוב ברובע שכן</span>
+                <span className="ticks"><span>0 חלש</span><span>25</span><span>50</span><span>75</span><span>100 חזק</span></span>
+                <span className="muted">קו לבן: רחוב ברובע שכן · אפור: בניין · ירוק: גן · עובי הקו: סוג הדרך</span>
               </>}
             />
             <Rich as="p" className="under">{underMap(sum, q.name, colorBy)}</Rich>
@@ -137,8 +142,12 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
                 <button className="press btn" onClick={() => go(`#/s/${picked.s.code}`)}>כל המדידות של הרחוב</button>
               </div>
             )}
-            <div className="panel-h"><h2>דירוג הרחובות</h2><span className="label">ציון</span></div>
-            <div className="rank" role="list">
+            <div className="side-tabs" role="tablist" aria-label="תצוגת הטור">
+              {([['rank', 'דירוג'], ['story', 'ממצאים'], ['act', 'פעולות']] as const).map(([k, l]) => (
+                <button key={k} role="tab" className="chip-t" aria-pressed={tab === k} aria-selected={tab === k} onClick={() => setParam('t', k === 'rank' ? null : k)}>{l}</button>
+              ))}
+            </div>
+            {tab === 'rank' && <div className="rank" role="list">
               {sum.streets.length ? sum.streets.map((x, i) => (
                 <button key={x.s.code} className="row" role="listitem" aria-pressed={sel === x.s.code} onClick={() => select(x.s.code)} onDoubleClick={() => go(`#/s/${x.s.code}`)}>
                   <span className="i">{i + 1}</span>
@@ -147,7 +156,33 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
                   <span className="score-pill" style={{ background: scoreColor(x.total), color: textOn(x.total) }}>{x.total}</span>
                 </button>
               )) : <p className="empty">ברובע הזה אין עדיין רחובות מדודים.<br />בחרו רובע אחר בשורה למעלה.</p>}
-            </div>
+            </div>}
+            {tab === 'story' && (
+              <div className="rank side-story">
+                {story.lines.map((l, i) => <Rich key={i} as="p">{l}</Rich>)}
+                <h3 className="mini-h">הרובע מול העיר</h3>
+                {story.rel.map((r) => (
+                  <button key={r.p.key} className="rel-row" onClick={() => setParam('c', r.p.key)} title="לחיצה צובעת את המפה לפי הפרמטר">
+                    <span>{r.p.label}</span>
+                    <span className="rel-bars"><span className="bar"><i style={{ width: `${r.q}%`, background: scoreColor(r.q) }} /></span><span className="bar city"><i style={{ width: `${r.c}%` }} /></span></span>
+                    <bdi className={'num ' + (r.d >= 0 ? 'ok' : 'bad')}>{r.d >= 0 ? '+' : ''}{r.d}</bdi>
+                  </button>
+                ))}
+                <p className="src">פס צבעוני: הרובע. פס אפור: העיר. המספר: ההפרש.</p>
+              </div>
+            )}
+            {tab === 'act' && (
+              <div className="rank side-story">
+                {plan.length ? plan.map((r) => (
+                  <div key={r.p.key} className={`tone ${TIERS[r.tier].tone}`}>
+                    <h4>{TIERS[r.tier].title} · {r.p.label}</h4>
+                    <Rich as="p">{`**${r.streets.length}** רחובות, **${r.stake}** נקודות. ${r.existing}`}</Rich>
+                    <p className="src">{r.streets.slice(0, 5).map((x) => x.s.name).join(' · ')}</p>
+                  </div>
+                )) : <p className="muted">אין ברובע פרמטר מתחת למחצית היעד.</p>}
+                <button className="press btn" onClick={() => go(`#/a?q=${qid}`)}>תוכנית הפעולה של {q.name}</button>
+              </div>
+            )}
           </aside>
         </div>
       </main>

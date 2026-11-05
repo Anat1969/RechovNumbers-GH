@@ -3,6 +3,7 @@ import { COVERAGE_MIN, PARAMS } from '../lib/model';
 import { CRIT } from '../data/criteria';
 import { IND } from '../data/indicators';
 import Rich from '../components/Rich';
+import { ACTIONS, BASIS, CAN, GAPS } from '../lib/actions';
 
 export default function Method({ model, takenAt, source }: { model: Model; takenAt: string; source: string }) {
   const votes = model.streets.filter((x) => x.s.m.votes).length;
@@ -28,6 +29,25 @@ export default function Method({ model, takenAt, source }: { model: Model; taken
         <Rich as="p">{'**מה הכלי לא עושה**: לא מודד רוחב זכות דרך, יחס גובה לרוחב, מפגש מגרש־רחוב ושפה משותפת. אלה דורשים שכבות GIS עירוניות או סקר שטח.'}</Rich>
       </section>
 
+      <h2 className="section-title">האם המדידה מבוססת? רמת הבסיס של כל יעד</h2>
+      <div className="basis-key">
+        {(['source', 'partial', 'proposed', 'relative'] as const).map((k) => (
+          <div key={k} className="card"><span className={`basis basis-${k}`}>{BASIS[k].he}</span> <span>{BASIS[k].explain}</span>
+            <div className="src">{PARAMS.filter((p) => ACTIONS[p.key].basis === k).map((p) => p.label).join(' · ')}</div></div>
+        ))}
+      </div>
+      <Rich as="p" className="src">{'**מסקנה:** אורך בלוק ומקצב בניינים נשענים על מספרים מהמקור. אופי הדרך, מעברי החצייה והמרחק לתחנה הם יעדים מוצעים, וכדאי שהאגף יאשר או יתקן אותם. השינוי עובר אוטומטית לכל הציונים.'}</Rich>
+
+      <h2 className="section-title">מה עוד לא נמדד: אפשר למדוד? מאיפה?</h2>
+      <table className="ptable gaps-table">
+        <thead><tr><th>מה חסר</th><th>היום</th><th>אפשר?</th><th>מאיפה</th><th>מה זה מוסיף</th></tr></thead>
+        <tbody>
+          {GAPS.map((g) => (
+            <tr key={g.what}><td><strong>{g.what}</strong></td><td className="src">{g.now}</td><td><span className={`can can-${g.can}`}>{CAN[g.can]}</span></td><td>{g.source}</td><td className="src">{g.gain}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
       <h2 className="section-title">הפרמטרים</h2>
       <div className="method">
         {PARAMS.map((p) => {
@@ -38,7 +58,7 @@ export default function Method({ model, takenAt, source }: { model: Model; taken
               <dl>
                 <dt>עיקרון</dt><dd>{CRIT[p.criterion].name}</dd>
                 <dt>מדדים</dt><dd>{p.indicators.map((i) => `${IND[i].titleHe} (${IND[i].maxScore})`).join(' · ')}</dd>
-                <dt>יעד</dt><dd><strong>{p.target}</strong></dd>
+                <dt>יעד</dt><dd><strong>{p.target}</strong> <span className={`basis basis-${ACTIONS[p.key].basis}`} title={BASIS[ACTIONS[p.key].basis].explain}>{BASIS[ACTIONS[p.key].basis].he}</span></dd>
                 <dt>איך חושב</dt><dd>{p.rule}</dd>
                 <dt>נשען על</dt><dd>{p.basis}</dd>
                 <dt>מקור</dt><dd className="src">{p.source}</dd>
