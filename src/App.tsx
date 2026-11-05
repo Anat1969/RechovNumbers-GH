@@ -67,7 +67,7 @@ export default function App() {
   if (!model) page = <main className="body"><div className="loading">{failed ? 'הנתונים לא נטענו. בדקו את החיבור ורעננו את הדף.' : 'טוען 525 רחובות...'}</div></main>;
   else if (route.page === 'quarter') page = <Quarter model={model} route={route} />;
   else if (route.page === 'street') page = <StreetPage model={model} route={route} />;
-  else if (route.page === 'cross') page = <Cross model={model} />;
+  else if (route.page === 'cross') page = <Cross model={model} route={route} />;
   else if (route.page === 'actions') page = <Actions model={model} route={route} />;
   else if (route.page === 'method') page = <Method model={model} takenAt={data!.taken_at} source={data!.source} />;
   else page = <Home model={model} />;

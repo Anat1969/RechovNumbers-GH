@@ -67,6 +67,39 @@ export default function Home({ model }: { model: Model }) {
           <Rich as="h1" className="insight-line">{head.line}</Rich>
           <Rich as="p" className="explain">{head.explain}</Rich>
         </div>
+      </section>
+
+      <section className="band" aria-labelledby="q-h">
+        <h2 id="q-h" className="band-h"><span className="label">רבעים</span>כל רובע במבט, מהחזק לחלש</h2>
+        <div className="tiles">
+          {tiles.map(({ id, name, sum }) => (
+            <button key={id} className="tile press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ממוצע ${sum.avg}`}>
+              <span className="t-top"><span className="t-name">{name}</span><span className="t-score" style={{ color: scoreColor(sum.avg) }}>{sum.avg}</span></span>
+              <MiniMap streets={sum.streets} />
+              <span className="t-sub">{sum.streets.length} רחובות · מוביל: {sum.best?.s.name}</span>
+            </button>
+          ))}
+        </div>
+        <p className="src">כל קו הוא רחוב, בצבע הציון שלו: ירוק חזק, אדום חלש. לחיצה על רובע פותחת את המפה והדירוג שלו.</p>
+      </section>
+
+      <section className="band" aria-labelledby="how-h">
+        <h2 id="how-h" className="band-h"><span className="label">שיטה</span>איך נולד הציון</h2>
+        <div className="flow-row">
+          <a className="src-card press" href="https://nicestreets-vercal.vercel.app/" target="_blank" rel="noopener"><span className="label">רחובות טובים באשדוד</span><span className="big">15</span><span className="sub">עקרונות</span></a>
+          <span className="arrow">+</span>
+          <a className="src-card press" href="https://shchuna-360.vercel.app/" target="_blank" rel="noopener"><span className="label">שכונה 360</span><span className="big">44</span><span className="sub">מדדים, 120 נקודות</span></a>
+          <span className="arrow">→</span>
+          <div className="src-card"><span className="label">נוגעים ברחוב</span><span className="big">{cross.touched.length}</span><span className="sub">{cross.points} נקודות</span></div>
+          <span className="arrow">→</span>
+          <div className="src-card" style={{ borderColor: 'var(--measure)' }}><span className="label">נמדדים היום</span><span className="big" style={{ color: 'var(--measure)' }}>{model.measuredInd.length}</span><span className="sub">{model.maxPoints} נקודות, {model.entering.length} פרמטרים</span></div>
+          <span className="arrow">→</span>
+          <div className="src-card"><span className="label">ציון רחוב</span><span className="big">0–100</span><span className="sub">משוקלל לפי שכונה 360</span></div>
+        </div>
+        <p className="src">השראה: <strong>Allan B. Jacobs</strong>, Great Streets, 1993: רחובות שנמדדו ושורטטו באותו קנה מידה, כדי להשוות ביניהם.</p>
+      </section>
+      <section className="band" aria-labelledby="ans-h">
+        <h2 id="ans-h" className="band-h"><span className="label">תשובות</span>שלוש התשובות של העיר</h2>
         <div className="answers" aria-label="שלוש התשובות של העיר">
           <button className="answer press" onClick={() => cs.top && go(`#/q/${cs.top.id}`)}>
             <span className="q">איזה רובע מוביל?</span>
@@ -102,10 +135,10 @@ export default function Home({ model }: { model: Model }) {
             <p className="src">ממוצע הציון של כל פרמטר ב-{cs.city.streets.length} רחובות. "ביעד": ציון מלא. "רחוקים": פחות מרבע מהיעד.</p>
           </div>
           <div className="card story">
-            {cs.lines.map((l, i) => <Rich key={i} as="p">{l}</Rich>)}
             <h3 className="mini-h">התפלגות הציונים</h3>
             <Histogram hist={cs.hist} />
             <p className="src">כמה רחובות בכל טווח ציון, מ-0 (ימין) עד 100 (שמאל).</p>
+            {cs.lines.map((l, i) => <Rich key={i} as="p">{l}</Rich>)}
           </div>
           <div className="card">
             <h3 className="mini-h">הרבעים, מהחזק לחלש</h3>
@@ -125,8 +158,8 @@ export default function Home({ model }: { model: Model }) {
           <h2 id="micro-h" className="band-h"><span className="label">מיקרו</span>דוגמה אחת: שני רחובות ב{low.name}</h2>
           <div className="band-grid two">
             <div className="card">
-              <Rich as="p" className="lead">{`==**${microA.s.name}** ו**${microB.s.name}** באותו רובע, ו-**${microA.total! - microB.total!}** נקודות ביניהם.== כך נראה הפער פרמטר אחר פרמטר.`}</Rich>
               <Compare model={model} a={microA} b={microB} />
+              <Rich as="p" className="lead" >{`==**${microA.s.name}** ו**${microB.s.name}** באותו רובע, ו-**${microA.total! - microB.total!}** נקודות ביניהם.== כך נראה הפער פרמטר אחר פרמטר.`}</Rich>
             </div>
             <div className="card">
               <h3 className="mini-h">מה עושים ב{microB.s.name}</h3>
@@ -168,7 +201,6 @@ export default function Home({ model }: { model: Model }) {
 
       <section className="band" aria-labelledby="gap-h">
         <h2 id="gap-h" className="band-h"><span className="label">אמינות</span>מה עוד לא נמדד, ואיך משלימים</h2>
-        <Rich as="p" className="lead">{`==**${outPts}** נקודות של שכונה 360 נוגעות ברחוב ועוד לא בציון.== ${out.map((p) => p.label).join(', ')} ממופים בפחות מרבע מהרחובות.`}</Rich>
         <div className="gaps">
           {GAPS.slice(0, 6).map((g) => (
             <div key={g.what} className="gap card">
@@ -179,37 +211,10 @@ export default function Home({ model }: { model: Model }) {
             </div>
           ))}
         </div>
+        <Rich as="p" className="lead">{`==**${outPts}** נקודות של שכונה 360 נוגעות ברחוב ועוד לא בציון.== ${out.map((p) => p.label).join(', ')} ממופים בפחות מרבע מהרחובות.`}</Rich>
         <button className="press btn" style={{ marginTop: 10 }} onClick={() => go('#/m')}>כל הפערים והבסיס של כל מדידה</button>
       </section>
 
-      <section className="band" aria-labelledby="q-h">
-        <h2 id="q-h" className="band-h"><span className="label">רבעים</span>כל רובע במבט: כל קו הוא רחוב, בצבע הציון שלו</h2>
-        <div className="tiles">
-          {tiles.map(({ id, name, sum }) => (
-            <button key={id} className="tile press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ממוצע ${sum.avg}`}>
-              <span className="t-top"><span className="t-name">{name}</span><span className="t-score" style={{ color: scoreColor(sum.avg) }}>{sum.avg}</span></span>
-              <MiniMap streets={sum.streets} />
-              <span className="t-sub">{sum.streets.length} רחובות · מוביל: {sum.best?.s.name}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="band" aria-labelledby="how-h">
-        <h2 id="how-h" className="band-h"><span className="label">שיטה</span>איך נולד הציון</h2>
-        <div className="flow-row">
-          <a className="src-card press" href="https://nicestreets-vercal.vercel.app/" target="_blank" rel="noopener"><span className="label">רחובות טובים באשדוד</span><span className="big">15</span><span className="sub">עקרונות</span></a>
-          <span className="arrow">+</span>
-          <a className="src-card press" href="https://shchuna-360.vercel.app/" target="_blank" rel="noopener"><span className="label">שכונה 360</span><span className="big">44</span><span className="sub">מדדים, 120 נקודות</span></a>
-          <span className="arrow">→</span>
-          <div className="src-card"><span className="label">נוגעים ברחוב</span><span className="big">{cross.touched.length}</span><span className="sub">{cross.points} נקודות</span></div>
-          <span className="arrow">→</span>
-          <div className="src-card" style={{ borderColor: 'var(--measure)' }}><span className="label">נמדדים היום</span><span className="big" style={{ color: 'var(--measure)' }}>{model.measuredInd.length}</span><span className="sub">{model.maxPoints} נקודות, {model.entering.length} פרמטרים</span></div>
-          <span className="arrow">→</span>
-          <div className="src-card"><span className="label">ציון רחוב</span><span className="big">0–100</span><span className="sub">משוקלל לפי שכונה 360</span></div>
-        </div>
-        <p className="src">השראה: <strong>Allan B. Jacobs</strong>, Great Streets, 1993: רחובות שנמדדו ושורטטו באותו קנה מידה, כדי להשוות ביניהם.</p>
-      </section>
     </main>
   );
 }

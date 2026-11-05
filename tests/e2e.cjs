@@ -34,6 +34,8 @@ async function mock(p) {
     await p.waitForSelector('.tile');
     ok((await p.locator('h1').innerText()).includes('רחובות באשדוד'), 'בית: שורת התובנה עם מספר הרחובות');
     ok(await p.locator('.tile').count() >= 10, 'בית: אריח לכל רובע');
+    const order = await p.evaluate(() => [...document.querySelectorAll('main .band-h')].map((h) => h.textContent));
+    ok(order[0].includes('כל רובע במבט') && order[1].includes('איך נולד הציון'), 'בית: כותרת, הדיאגרמות של הרבעים, איך נולד הציון, ואז השאר');
     ok(await p.locator('.answers .answer').count() === 3, 'בית: שלוש תשובות');
     ok(await p.locator('ai-menu .logo').isVisible(), 'כפתור הלוגו A&I בסרגל');
     ok(!(await p.locator('header >> text=העתקת קישור').first().isVisible().catch(() => false)), 'אין כפתורי פיתוח חופשיים בסרגל');
@@ -108,6 +110,14 @@ async function mock(p) {
     ok(await p.locator('.matrix td.link').count() > 5, 'הצלבה: תאים קשורים שעוד לא נמדדים');
     await p.locator('.matrix th.colh').nth(30).click();
     ok((await p.locator('.detail').innerText()).includes('נקודות'), 'הצלבה: לחיצה על מדד מציגה הסבר');
+    await p.getByRole('button', { name: 'פירוק לפי עיקרון' }).click();
+    ok(await p.locator('.crit-card').count() === 15 && await p.locator('.crit-card .ind-pill').count() >= 23, 'הצלבה: פירוק לפי עיקרון, כרטיס לכל עיקרון');
+    await p.getByRole('button', { name: 'פירוק לפי מדד' }).click();
+    ok(await p.locator('.ind-line').count() === 44, 'הצלבה: פירוק לפי מדד, 44 שורות קריאות');
+    await p.locator('.cross-bar .chip-t').nth(4).click();
+    ok(p.url().includes('ch=b') && await p.locator('.ind-line').count() === 20, 'הצלבה: סינון לפי פרק');
+    await p.getByRole('button', { name: 'מטריצה' }).click();
+    ok(await p.locator('.matrix th.colh').count() === 20, 'הצלבה: מטריצה מסוננת לפרק, עם תוויות רחבות');
 
     await p.locator('.tabs').getByRole('button', { name: 'פעולות' }).click();
     await p.waitForSelector('.act-card');

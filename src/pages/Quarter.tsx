@@ -159,7 +159,6 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
             </div>}
             {tab === 'story' && (
               <div className="rank side-story">
-                {story.lines.map((l, i) => <Rich key={i} as="p">{l}</Rich>)}
                 <h3 className="mini-h">הרובע מול העיר</h3>
                 {story.rel.map((r) => (
                   <button key={r.p.key} className="rel-row" onClick={() => setParam('c', r.p.key)} title="לחיצה צובעת את המפה לפי הפרמטר">
@@ -169,6 +168,8 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
                   </button>
                 ))}
                 <p className="src">פס צבעוני: הרובע. פס אפור: העיר. המספר: ההפרש.</p>
+                <h3 className="mini-h">מה זה אומר</h3>
+                {story.lines.map((l, i) => <Rich key={i} as="p">{l}</Rich>)}
               </div>
             )}
             {tab === 'act' && (
