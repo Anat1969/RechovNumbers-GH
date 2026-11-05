@@ -17,7 +17,7 @@ a { color: var(--measure); }
 .tab[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); }
 
 /* מעטפת בגודל המסך */
-.shell { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.shell { height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
 .body { min-height: 0; overflow: hidden; display: grid; grid-template-rows: auto minmax(0, 1fr); max-width: 1800px; width: 100%; margin: 0 auto; padding: 12px 16px 8px; gap: 10px; }
 .body.scroll { overflow: auto; grid-template-rows: none; align-content: start; }
 
@@ -72,7 +72,7 @@ h1.insight-line { font-size: clamp(20px, 2vw, 28px); margin: 0; line-height: 1.2
 .map-wrap .street { fill: none; stroke-linecap: round; stroke-linejoin: round; cursor: pointer; transition: stroke-width .15s, opacity .15s; }
 .map-wrap .street:hover { opacity: 1 !important; }
 .map-wrap .ctx { fill: none; stroke: #E2E1DC; stroke-linecap: round; }
-.map-wrap .lbl { font: 600 12px var(--font); fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 4px; pointer-events: none; }
+.map-wrap .lbl { font-family: var(--font); font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: #fff; pointer-events: none; }
 .map-tools { position: absolute; top: 8px; left: 8px; display: grid; gap: 4px; z-index: 2; }
 .map-tools button { width: 30px; height: 30px; padding: 0; font-size: 16px; }
 .map-tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: 12px; padding: 4px 8px; white-space: nowrap; z-index: 3; transform: translate(-50%, -130%); }
@@ -207,3 +207,26 @@ h1.insight-line { font-size: clamp(20px, 2vw, 28px); margin: 0; line-height: 1.2
   .dock-in > .label { display: none; }
   .method { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* תיקון: אף שורה לא רחבה מהמסך */
+.body { grid-template-columns: minmax(0, 1fr); }
+.head > * { min-width: 0; max-width: 100%; }
+.head .chips { flex: 1 1 320px; justify-content: flex-start; }
+.under { background: #fff; position: relative; }
+
+/* נייד: כל פאנל גולל בתוכו, כדי שהדף עצמו יישאר קצר */
+@media (max-width: 720px) {
+  .home > .panel:first-child { max-height: 52vh; }
+  .home > .panel:last-child { max-height: 40vh; }
+  .cols3 > .panel { max-height: 62vh; }
+  .answer .sub { display: none; }
+  .answers { gap: 6px; }
+  .answer { padding: 8px 12px; }
+}
+@media (max-width: 720px) {
+  .stage .panel:first-child { height: 46vh; }
+  .stage .rank { max-height: 34vh; }
+  .cols3 > .panel { max-height: 40vh; }
+  .street-head .score-big { font-size: 36px; }
+}
+.ai-box .tone p { white-space: pre-line; }

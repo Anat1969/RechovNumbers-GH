@@ -10,7 +10,7 @@ const SIZES = [['1920', 1920, 1080], ['1440', 1440, 900], ['1280', 1280, 720], [
   for (const [name, width, height] of SIZES) {
     const p = await b.newPage({ viewport: { width, height } });
     await p.route('**/appofapp-gh.vercel.app/**', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
-    await p.route('**/fonts.googleapis.com/**', r => r.abort());
+    await p.route('**/fonts.googleapis.com/**', r => r.abort()); await p.route('**/rest/v1/**', r => r.abort());
     for (const h of (hashes.length ? hashes : [''])) {
       await p.goto(base + (h ? '#' + h : ''), { waitUntil: 'networkidle' });
       await p.waitForTimeout(1000);

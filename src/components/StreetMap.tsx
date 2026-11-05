@@ -120,7 +120,7 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
         </g>
         <g>
           {labels.map((p) => (
-            <text key={p.i.s.code} className="lbl" x={p.mid![0]} y={p.mid![1] - 8 * scale} fontSize={12 * scale} strokeWidth={4 * scale} textAnchor="middle" direction="rtl">{p.i.s.name}</text>
+            <text key={p.i.s.code} className="lbl" x={p.mid![0]} y={p.mid![1] - 8 * scale} style={{ fontSize: 13 * scale, strokeWidth: 4 * scale }} textAnchor="middle" direction="rtl">{p.i.s.name}</text>
           ))}
         </g>
       </svg>
