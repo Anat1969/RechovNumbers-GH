@@ -1,5 +1,6 @@
 // מושך את rn_street_metrics מ-ASHDODMAP לקובץ public/data/snapshot.json.
 // רץ בכל בנייה ב-Vercel וב-Action. כשאין רשת (סביבת פיתוח סגורה) הקובץ הקיים נשאר כמו שהוא, והבנייה לא נכשלת.
+// גרסת נתונים: 05.11.2026, אחרי תיקון איכות הגאומטריה (אשכול הקטעים שבתוך הרובע).
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 
 const URL = 'https://cbhexpybdggwzyakgagd.supabase.co/rest/v1/rn_street_metrics?select=code,name,quarter_id,quarter_source,line,m,computed_at&order=code';
