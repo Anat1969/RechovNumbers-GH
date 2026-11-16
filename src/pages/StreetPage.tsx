@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ReadTabs, ScoreBadge, Lines, Legend, Ruler, Strip } from '../components/Read';
+import { ReadTabs, ScoreBadge, Lines, Legend, Ruler, Strip, GoogleLinks } from '../components/Read';
 import { Sketch } from '../components/Sketch';
 import type { Model } from '../lib/model';
 import { PARAMS, classHe, scoreColor, summarize, textOn, unranked } from '../lib/model';
@@ -49,10 +49,13 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
         <div className="a-kpi street-kpi">
           <span className="street-shape"><Sketch lines={[{ key: x.s.code, line: x.s.line, color: scoreColor(x.total), w: 4, top: true }]} label={`צורת ${x.s.name}`} /></span>
           <ScoreBadge v={x.total} sub={`**${Math.round(x.points * 10) / 10}** מתוך **${model.maxPoints}** נקודות${sum && rank ? ` · מקום **${rank}** מתוך **${sum.streets.length}**` : ''}`} />
-          {sum && <div className="prev-next">
+          <div className="prev-next">
+            <GoogleLinks name={x.s.name} line={x.s.line} />
+            {sum && <>
             <button className="press btn" disabled={!prev} onClick={() => prev && go(`#/s/${prev.s.code}?t=${tab}`)} title={prev?.s.name}>הקודם בדירוג</button>
             <button className="press btn" disabled={!next} onClick={() => next && go(`#/s/${next.s.code}?t=${tab}`)} title={next?.s.name}>הבא בדירוג</button>
-          </div>}
+            </>}
+          </div>
         </div>
       </header>
 

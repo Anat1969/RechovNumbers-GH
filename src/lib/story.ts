@@ -46,13 +46,28 @@ export function cityStory(model: Model) {
     const pt = profile(model, top.sum.streets), pl = profile(model, low.sum.streets);
     for (const r of pt) { const l = pl.find((x) => x.p.key === r.p.key)!; const g = r.score - l.score; if (!driver || g > driver.gap) driver = { p: r.p, gap: g }; }
   }
+  // איפה החולשה: ברבעי המגורים, או מחוצה להם (אזורי תעשייה, נמל, צירים ומרכזים)
+  const outside = (x: Scored) => !x.s.quarter_id || QMAP[x.s.quarter_id]?.kind !== 'quarter';
+  const weakS = city.streets.filter((x) => x.total! < 50);
+  const edge = {
+    weak: weakS.length, weakOut: weakS.filter(outside).length,
+    all: city.streets.length, allOut: city.streets.filter(outside).length,
+    avgIn: Math.round(avg(city.streets.filter((x) => !outside(x)).map((x) => x.total!))),
+    avgOut: Math.round(avg(city.streets.filter(outside).map((x) => x.total!))),
+  };
+  const edgeLine = edge.weak && edge.allOut
+    ? (pct(edge.weakOut, edge.weak) > pct(edge.allOut, edge.all) + 5
+      ? `==החולשה מרוכזת מחוץ לרבעי המגורים.== **${pct(edge.weakOut, edge.weak)}%** מהרחובות מתחת ל-**50** נמצאים באזורי התעשייה, בנמל ובצירים, אף שהם רק **${pct(edge.allOut, edge.all)}%** מהרחובות. ממוצע שם **${edge.avgOut}**, וברבעים **${edge.avgIn}**.`
+      : `ברבעי המגורים ממוצע **${edge.avgIn}**, ומחוץ להם **${edge.avgOut}**. **${edge.weak - edge.weakOut}** מתוך **${edge.weak}** הרחובות מתחת ל-**50** נמצאים ברבעי המגורים.`)
+    : '';
   return {
-    city, prof, ranks, hist, below50, top, low, driver,
+    city, prof, ranks, hist, below50, top, low, driver, edge, edgeLine,
     lines: [
       `==הצוואר הצר של אשדוד: **${weak.p.label}**.== רק **${weak.meet}%** מהרחובות עומדים ביעד (${weak.p.target}), ו-**${weak.far}%** רחוקים ממנו לגמרי.`,
       `החוזקה: **${strong.p.label}**, **${strong.meet}%** מהרחובות ביעד. העיר נבנתה עם ${strong.p.key === 'busdist' ? 'רשת תחנות צפופה' : strong.p.key === 'parkdist' ? 'גנים קרובים לבית' : 'בסיס טוב בפרמטר הזה'}.`,
       top && low ? `הפער בין **${top.name}** (**${top.sum.avg}**) ל**${low.name}** (**${low.sum.avg}**) הוא **${(top.sum.avg ?? 0) - (low.sum.avg ?? 0)}** נקודות${driver ? `, ורובו ב**${driver.p.label}**` : ''}.` : '',
       `**${below50}** מתוך **${city.streets.length}** רחובות מתחת ל-**50**. הם רשימת העבודה הראשונה.`,
+      edgeLine,
     ].filter(Boolean),
   };
 }

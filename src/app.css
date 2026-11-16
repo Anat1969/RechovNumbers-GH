@@ -645,3 +645,16 @@ h1.insight-line { font-size: clamp(24px, 2.1vw, 34px); line-height: 1.3; }
 .act-card.on { box-shadow: inset -4px 0 0 var(--brick); padding-inline-start: 12px; background: #FBF4F3; }
 .act-card .label { margin-inline-end: 6px; }
 .tier { gap: 4px; }
+
+/* ===== לוויין ומבט רחוב (16.11.2026) ===== */
+.map-tools .sat-btn { width: auto; padding: 0 8px; font-size: 13px; height: 30px; }
+.map-wrap.is-sat { background: #2B2B28; }
+.map-wrap.is-sat .ctx-case { stroke: rgba(0,0,0,.35); }
+.map-wrap.is-sat .ctx { stroke: rgba(255,255,255,.55); stroke-width: 2.5px; }
+.map-wrap.is-sat .street-case { stroke: #fff; stroke-opacity: .9; }
+.map-wrap.is-sat .lbl { stroke: rgba(255,255,255,.95); }
+.sat-credit { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #fff; background: rgba(0,0,0,.45); padding: 1px 6px; z-index: 2; white-space: nowrap; }
+.g-links { display: flex; gap: 6px; }
+.g-links .btn { text-decoration: none; text-align: center; white-space: nowrap; }
+.pick-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.street-kpi .prev-next { flex-wrap: wrap; }

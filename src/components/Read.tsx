@@ -140,3 +140,19 @@ export function MethodNav({ cur }: { cur: 'm' | 'x' }) {
     </div>
   );
 }
+
+/** נקודת אמצע של הקטע הארוך ברחוב: לשם נפתח מבט הרחוב. */
+function midOf(line: number[][][] | null): [number, number] | null {
+  const l = (line ?? []).reduce((a, b) => (b.length > a.length ? b : a), [] as number[][]);
+  if (!l.length) return null; const p = l[Math.floor(l.length / 2)]; return [p[0], p[1]];
+}
+/** גוגל מפות: חיפוש לפי שם הרחוב ו"אשדוד", ומבט רחוב באמצע הקטע שנמדד. */
+export function GoogleLinks({ name, line }: { name: string; line: number[][][] | null }) {
+  const m = midOf(line);
+  return (
+    <div className="g-links">
+      <a className="press btn" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name}, אשדוד`)}`} target="_blank" rel="noopener">בגוגל מפות</a>
+      {m && <a className="press btn" href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${m[1].toFixed(6)},${m[0].toFixed(6)}`} target="_blank" rel="noopener">מבט רחוב</a>}
+    </div>
+  );
+}

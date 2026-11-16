@@ -12,6 +12,7 @@ async function mock(p) {
   await p.route('**/appofapp-gh.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: MENU }));
   await p.route('**/fonts.googleapis.com/**', (r) => r.abort());
   await p.route('**/rest/v1/**', (r) => r.abort());
+  await p.route((u) => u.hostname === 'server.arcgisonline.com', (r) => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#5a6b4a"/></svg>' }));
   await p.route('**/functions/v1/rn-distill', (r) => r.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ provider: 'gemini', diagnosis: '**אבחון** בדיקה. משפט הסבר.', lever: '**אורך בלוק** הוא המנוף.', action: 'לפתוח **מעבר** ברחוב הדקל.' }),
@@ -63,7 +64,8 @@ async function mock(p) {
     ok(await p.locator('.answer.has-art .art svg path').count() > 50, 'בית: ציור לכל תשובה');
 
     await p.locator('.tile').first().click();
-    await p.waitForSelector('.answers .answer');
+    await p.waitForURL(/#\/q\//);
+    await p.waitForSelector('.gallery .g-cell');
     ok(p.url().includes('#/q/'), 'אריח פותח את הרובע');
     const cells = await p.locator('.gallery .g-cell').count();
     ok(cells > 3 && await p.locator('.answer.has-art').count() === 3, `רובע: ${cells} רחובות בגלריה באותו קנה מידה, וציור לכל תשובה`);
@@ -100,7 +102,7 @@ async function mock(p) {
     await p.getByRole('tab', { name: 'תובנות' }).click();
     await p.locator('.answers .answer').nth(0).click();
     ok(await p.locator('.answers .answer').nth(0).getAttribute('aria-pressed') === 'true', 'תשובה 1 בוחרת את הרחוב המוביל');
-    await p.locator('.map-tools button').first().click();
+    await p.getByRole('button', { name: 'הגדלה' }).click();
     ok(true, 'זום במפה');
 
     await p.getByRole('button', { name: 'אבחון מזוקק' }).click();
@@ -111,6 +113,14 @@ async function mock(p) {
     await p.getByRole('button', { name: 'כל המדידות של הרחוב' }).click();
     await p.waitForSelector('.badge-n');
     ok(p.url().includes('#/s/'), 'מעבר לדף הרחוב');
+    const gm = await p.getByRole('link', { name: 'בגוגל מפות' }).getAttribute('href');
+    ok(decodeURIComponent(gm).includes('אשדוד') && gm.includes('google.com/maps/search'), 'דף רחוב: קישור לגוגל מפות עם שם הרחוב ואשדוד');
+    ok((await p.getByRole('link', { name: 'מבט רחוב' }).getAttribute('href')).includes('map_action=pano&viewpoint=31.'), 'דף רחוב: מבט רחוב באמצע הרחוב');
+    await p.locator('.sat-btn').click();
+    await p.waitForSelector('.sat-tiles image', { state: 'attached' });
+    ok(await p.locator('.sat-tiles image').count() >= 4 && await p.locator('.sat-credit').isVisible(), 'מפה: לוויין מתחת לרחובות, עם קרדיט');
+    await p.locator('.sat-btn').click();
+    ok(await p.locator('.sat-tiles image').count() === 0, 'מפה: חזרה מהלוויין');
     ok(await p.locator('.fam').count() === 5, 'דף רחוב: חמש המשפחות בלשונית תובנות');
     ok(await p.locator('svg.ruler').isVisible() && await p.locator('svg.strip circle').count() > 3 && await p.locator('.street-shape svg path').count() >= 1, 'דף רחוב: סרגל, פס דירוג מול הרובע וצורת הרחוב');
     await p.getByRole('tab', { name: 'מדידות' }).click();

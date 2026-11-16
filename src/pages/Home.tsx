@@ -75,7 +75,7 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
         </>
       ) : (
         <>
-          <span className="sweep-l">{`כל ${order.length} הרחובות`}</span>
+          <span className="sweep-l">{cs.edge.weak ? `${Math.round(cs.edge.weakOut / cs.edge.weak * 100)}% מהחלשים: תעשייה, נמל וצירים` : `כל ${order.length} הרחובות`}</span>
           <button className="press btn sweep-btn" onClick={() => setReplay((r) => r + 1)}>הפעלה מחדש</button>
         </>
       )}

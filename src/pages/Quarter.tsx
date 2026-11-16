@@ -11,7 +11,7 @@ import Rich from '../components/Rich';
 import { actionPlan, quarterRanks, quarterStory } from '../lib/story';
 import { TIERS, type Tier } from '../lib/actions';
 import { GroupSketch, StreetGallery, StreetInQuarter } from '../components/Sketch';
-import { Answer, ColorSelect, Histogram, Legend, Lines, ReadTabs, ScoreBadge, histOf } from '../components/Read';
+import { GoogleLinks, Answer, ColorSelect, Histogram, Legend, Lines, ReadTabs, ScoreBadge, histOf } from '../components/Read';
 
 const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['rank', 'דירוג'], ['num', 'מספרים']] as const;
 
@@ -105,7 +105,10 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
                 </div>
               );
             })}
-            <button className="press btn" onClick={() => go(`#/s/${picked.s.code}`)}>כל המדידות של הרחוב</button>
+            <div className="pick-acts">
+              <button className="press btn" onClick={() => go(`#/s/${picked.s.code}`)}>כל המדידות של הרחוב</button>
+              <GoogleLinks name={picked.s.name} line={picked.s.line} />
+            </div>
           </div>
         )}
         <ReadTabs tabs={TABS} cur={tab} />

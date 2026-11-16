@@ -70,7 +70,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
     };
     const ring = (r: number[][]) => r.map(([lo, la], i) => { const [x, y] = P(lo, la); return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`; }).join('') + 'Z';
     const W = (maxX - minX) * K * cos, H = (maxY - minY) * K;
-    return { P, path, mid, labelPath, ring, W: Math.max(W, 200), H: Math.max(H, 200), minX, maxX, minY, maxY };
+    const inv = (x: number, y: number): [number, number] => [x / (K * cos) + minX, maxY - y / K];
+    return { P, inv, cos, path, mid, labelPath, ring, W: Math.max(W, 200), H: Math.max(H, 200), minX, maxX, minY, maxY };
   }, [items]);
 
   useEffect(() => {
@@ -107,6 +108,9 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   const paths = useMemo(() => (geo ? items.map((i) => ({ i, d: geo.path(i.s), mid: geo.mid(i.s), lp: i.label ? geo.labelPath(i.s) : null })) : []), [items, geo]);
 
   const [ground, setGround] = useState<{ b: string; p: string } | null>(null);
+  // תצלום אוויר: מה שבאמת יש ברחוב, מתחת לקווי הציון. נזכר בין דפים.
+  const [sat, setSat] = useState(() => { try { return localStorage.getItem('rn-sat') === '1'; } catch { return false; } });
+  const toggleSat = () => setSat((v) => { try { localStorage.setItem('rn-sat', v ? '0' : '1'); } catch { /* פרטי */ } return !v; });
   useEffect(() => {
     if (!geo || !withGround) return;
     const m = 0.003; let alive = true;
@@ -120,6 +124,21 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   if (!geo || !vb) return <div className="map-wrap" ref={wrap}><div className="empty">אין לרחובות האלה קו על המפה.</div></div>;
 
   const scale = vb[2] / size.w; // יחידות מפה לפיקסל
+  // אריחי Web Mercator, כל אריח מוטל כמלבן להטלה המקומית (בקנה מידה של עיר ההפרש זניח)
+  const tiles: { k: string; href: string; x: number; y: number; w: number; h: number }[] = [];
+  if (sat) {
+    const [lo0, la1] = geo.inv(vb[0], vb[1]), [lo1, la0] = geo.inv(vb[0] + vb[2], vb[1] + vb[3]);
+    const tx = (lo: number, z: number) => Math.floor(((lo + 180) / 360) * 2 ** z);
+    const ty = (la: number, z: number) => { const r = la * Math.PI / 180; return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z); };
+    const lon = (x: number, z: number) => (x / 2 ** z) * 360 - 180;
+    const lat = (y: number, z: number) => { const n = Math.PI - (2 * Math.PI * y) / 2 ** z; return (180 / Math.PI) * Math.atan(Math.sinh(n)); };
+    let z = Math.min(19, Math.max(11, Math.ceil(Math.log2((156543.03 * geo.cos) / Math.max(scale, 0.01)))));
+    while (z > 11 && (tx(lo1, z) - tx(lo0, z) + 1) * (ty(la0, z) - ty(la1, z) + 1) > 90) z--;
+    for (let x = tx(lo0, z); x <= tx(lo1, z); x++) for (let y = ty(la1, z); y <= ty(la0, z); y++) {
+      const [ax, ay] = geo.P(lon(x, z), lat(y, z)), [bx, by] = geo.P(lon(x + 1, z), lat(y + 1, z));
+      tiles.push({ k: `${z}/${y}/${x}`, href: `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, x: ax, y: ay, w: bx - ax, h: by - ay });
+    }
+  }
   // תוויות: לפי סדר חשיבות, ומדלגים על מה שחופף לתווית שכבר הונחה
   const placed: { x: number; y: number; w: number }[] = [];
   const labels = paths.filter((p) => p.i.label && p.mid && p.lp && p.lp.len / scale > p.i.s.name.length * 8 + 16).sort((a, b) => (b.i.weight ?? 0) - (a.i.weight ?? 0)).filter((p) => {
@@ -138,8 +157,9 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   };
 
   return (
-    <div className="map-wrap" ref={wrap}>
+    <div className={'map-wrap' + (sat ? ' is-sat' : '')} ref={wrap}>
       <div className="map-tools">
+        <button className="press sat-btn" aria-pressed={sat} onClick={toggleSat} title="תצלום אוויר מתחת לרחובות">לוויין</button>
         <button className="press" aria-label="הגדלה" onClick={() => zoom(0.7)}>+</button>
         <button className="press" aria-label="הקטנה" onClick={() => zoom(1.4)}>−</button>
         <button className="press" aria-label="איפוס המפה" onClick={() => setVb(fit())} style={{ fontSize: 11 }}>⤢</button>
@@ -157,7 +177,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
         onPointerUp={() => { setTimeout(() => { drag.current = null; }, 0); }}
         onPointerLeave={() => { drag.current = null; setTip(null); }}
       >
-        {ground && <g className="ground">
+        {sat && <g className="sat-tiles">{tiles.map((t) => <image key={t.k} href={t.href} x={t.x} y={t.y} width={t.w + 0.5} height={t.h + 0.5} preserveAspectRatio="none" />)}</g>}
+        {ground && !sat && <g className="ground">
           <path d={ground.p} className="g-park" />
           <path d={ground.b} className="g-bld" />
         </g>}
@@ -227,6 +248,7 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
       })()}
       <svg className="north" width="22" height="30" viewBox="0 0 22 30" aria-label="צפון"><path d="M11 2 L18 22 L11 17 L4 22 Z" fill="#1A1A18" /><path d="M11 2 L4 22 L11 17 Z" fill="#fff" stroke="#1A1A18" strokeWidth="1" /><text x="11" y="29.5" textAnchor="middle" fontSize="8" fontWeight="600" fill="#1A1A18">צ</text></svg>
       {legend && <div className="legend">{legend}</div>}
+      {sat && <span className="sat-credit">תצלום: Esri, Maxar, Earthstar Geographics</span>}
       {overlay}
     </div>
   );
