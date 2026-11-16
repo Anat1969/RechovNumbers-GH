@@ -570,3 +570,50 @@ h1.insight-line { font-size: clamp(24px, 2.1vw, 34px); line-height: 1.3; }
 .gf-out { background: var(--canopy); color: #fff; }
 .gf-a { color: var(--ink-mute); }
 @media (max-width: 1000px) { .method-top { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== גרפיקה בולטת (16.11.2026): ציור לכל תשובה, גלריית רחובות, סרגל ופס דירוג ===== */
+.sketch { width: 100%; height: 100%; display: block; direction: ltr; }
+.answer.has-art { grid-template-columns: minmax(0, 1fr) 112px; column-gap: 14px; }
+.answer.has-art > :not(.art) { grid-column: 1; }
+.answer .art { grid-column: 2; grid-row: 1 / span 3; width: 112px; height: 112px; align-self: center; background: #FBFBF9; box-shadow: inset 0 0 0 1px var(--rule-soft); padding: 4px; }
+.tier-item.has-art { grid-template-columns: minmax(0, 1fr) 96px; column-gap: 14px; }
+.tier-item.has-art > :not(.art) { grid-column: 1; }
+.tier-item .art { grid-column: 2; grid-row: 1 / span 4; width: 96px; height: 96px; align-self: start; background: #FBFBF9; padding: 3px; }
+.a-pane .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.a-pane .tile { grid-template-rows: auto 92px; padding: 6px 8px; }
+.a-pane .tile .t-name { font-size: 15px; }
+.a-pane .tile .t-score { font-size: 18px; }
+
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.g-cell { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 84px auto 4px; gap: 2px 6px; padding: 6px 8px 0; text-align: start; min-width: 0; }
+.g-cell .sketch { grid-column: 1 / -1; }
+.g-cell .g-name { font-size: 13.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.g-cell .g-i { font-size: 11px; color: var(--ink-mute); font-weight: 400; }
+.g-cell .g-v { font-size: 13.5px; color: var(--ink); }
+.g-cell .g-score { grid-column: 1 / -1; height: 4px; margin: 0 -8px; }
+.g-cell[aria-pressed="true"] { background: #fff; color: var(--ink); outline: 2px solid var(--ink); outline-offset: -2px; }
+.g-cell[aria-pressed="true"] .g-name { color: var(--ink); }
+.g-note { grid-column: 1 / -1; margin: 2px 0 0; }
+
+.graphs { display: grid; gap: 14px; }
+.graph { display: grid; gap: 4px; }
+.graph p { margin: 0; }
+.strip, .ruler { width: 100%; height: auto; display: block; }
+.strip .hist-x, .ruler .hist-x { font: 11px var(--mono); fill: var(--ink-mute); }
+.strip-l { font: 600 13px var(--font); fill: var(--ink); }
+.street-kpi { grid-template-columns: 96px auto minmax(0, 1fr); align-items: center; }
+.street-shape { width: 96px; height: 96px; background: #FBFBF9; box-shadow: inset 0 0 0 1px var(--rule-soft); padding: 4px; }
+@media (max-width: 560px) {
+  .answer.has-art { grid-template-columns: minmax(0, 1fr) 84px; }
+  .answer .art { width: 84px; height: 84px; }
+  .tier-item.has-art { grid-template-columns: minmax(0, 1fr) 72px; }
+  .tier-item .art { width: 72px; height: 72px; }
+  .a-pane .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .street-kpi { grid-template-columns: 72px auto; }
+  .street-shape { width: 72px; height: 72px; }
+}
+.street-kpi { grid-template-columns: 96px auto minmax(0, 1fr); }
+.street-kpi .prev-next { grid-column: 1 / -1; justify-self: start; }
+.prev-next .btn { white-space: nowrap; }
+.tier-item.has-art { grid-template-columns: minmax(0, 1fr) 110px; }
+.tier-item .art { width: 110px; height: 110px; }

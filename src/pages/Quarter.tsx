@@ -10,6 +10,7 @@ import StreetMap from '../components/StreetMap';
 import Rich from '../components/Rich';
 import { actionPlan, quarterRanks, quarterStory } from '../lib/story';
 import { TIERS, type Tier } from '../lib/actions';
+import { GroupSketch, StreetGallery, StreetInQuarter } from '../components/Sketch';
 import { Answer, ColorSelect, Histogram, Legend, Lines, ReadTabs, ScoreBadge, histOf } from '../components/Read';
 
 const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['rank', 'דירוג'], ['num', 'מספרים']] as const;
@@ -29,7 +30,7 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
   const plan = useMemo(() => actionPlan(model, sum.streets), [model, sum]);
   const ranks = useMemo(() => quarterRanks(model), [model]);
   const place = ranks.findIndex((r) => r.id === qid) + 1;
-  const tab = route.q.get('t') ?? 'ins';
+  const tab = TABS.find(([k]) => k === route.q.get('t'))?.[0] ?? 'ins';
   const counts = useMemo(() => Object.fromEntries(QUARTERS.map((x) => [x.id, model.streets.filter((s) => s.s.quarter_id === x.id && s.total != null).length])), [model]);
   const a = answers(sum, q.name);
   const picked = sel != null ? model.byCode[sel] : null;
@@ -111,10 +112,14 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
         <div className="a-pane">
           {tab === 'ins' && <>
             {sum.streets.length ? <div className="answers">
-              <Answer kind="good" q="איזה רחוב הכי טוב בשכונה?" name={a.best?.name} score={a.best?.score} sub={a.best?.sub} pressed={!!a.best && sel === sum.best?.s.code} onClick={() => sum.best && select(sum.best.s.code)} />
-              <Answer kind="bad" q="איזה רחוב צריך הכי הרבה עזרה?" name={a.worst?.name} score={a.worst?.score} sub={a.worst?.sub} pressed={!!a.worst && sel === sum.worst?.s.code} onClick={() => sum.worst && select(sum.worst.s.code)} />
-              <Answer kind="gap" q="מה הכי חסר בשכונה?" name={a.weak?.name} score={a.weak?.score} sub={a.weak?.sub} pressed={!!sum.weakParam && colorBy?.key === sum.weakParam.p.key} onClick={() => sum.weakParam && setParam('c', colorBy?.key === sum.weakParam.p.key ? null : sum.weakParam.p.key)} />
+              <Answer kind="good" q="איזה רחוב הכי טוב בשכונה?" name={a.best?.name} score={a.best?.score} sub={a.best?.sub} pressed={!!a.best && sel === sum.best?.s.code} onClick={() => sum.best && select(sum.best.s.code)} art={sum.best && <StreetInQuarter x={sum.best} quarter={sum.streets} />} />
+              <Answer kind="bad" q="איזה רחוב צריך הכי הרבה עזרה?" name={a.worst?.name} score={a.worst?.score} sub={a.worst?.sub} pressed={!!a.worst && sel === sum.worst?.s.code} onClick={() => sum.worst && select(sum.worst.s.code)} art={sum.worst && <StreetInQuarter x={sum.worst} quarter={sum.streets} />} />
+              <Answer kind="gap" q="מה הכי חסר בשכונה?" name={a.weak?.name} score={a.weak?.score} sub={a.weak?.sub} pressed={!!sum.weakParam && colorBy?.key === sum.weakParam.p.key} onClick={() => sum.weakParam && setParam('c', colorBy?.key === sum.weakParam.p.key ? null : sum.weakParam.p.key)} art={sum.weakParam && <GroupSketch streets={sum.streets} by={sum.weakParam.p.key} />} />
             </div> : <p className="empty">ברובע הזה אין עדיין רחובות מדודים. בחרו רובע אחר.</p>}
+            {sum.streets.length > 0 && <>
+              <h3 className="mini-h">{`${sum.streets.length} הרחובות, באותו קנה מידה`}</h3>
+              <StreetGallery streets={sum.streets} sel={sel} onSelect={select} />
+            </>}
             <h3 className="mini-h">מה המספרים אומרים</h3>
             <Lines lines={story.lines} />
             {ai.state === 'idle' && sum.streets.length > 0 && <button className="press btn" onClick={runAi}>אבחון מזוקק</button>}
@@ -144,7 +149,8 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
                 <div key={t} className={`tier tier-${t}`}>
                   <h3 className="mini-h">{TIERS[t].title}</h3>
                   {rows.map((r) => (
-                    <div key={r.p.key} className="tier-item">
+                    <div key={r.p.key} className="tier-item has-art">
+                      <span className="art"><GroupSketch streets={sum.streets} hl={new Set(r.streets.map((x) => x.s.code))} label={`איפה: ${r.p.label}`} /></span>
                       <Rich as="strong">{`${r.p.label}: **${r.streets.length}** רחובות, **${r.stake}** נקודות`}</Rich>
                       <span>{t === 'plan' ? r.guideline : r.existing}</span>
                       <div className="street-chips">

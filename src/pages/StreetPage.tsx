@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { ReadTabs, ScoreBadge, Lines, Legend } from '../components/Read';
+import { ReadTabs, ScoreBadge, Lines, Legend, Ruler, Strip } from '../components/Read';
+import { Sketch } from '../components/Sketch';
 import type { Model } from '../lib/model';
-import { PARAMS, scoreColor, summarize, textOn, unranked } from '../lib/model';
+import { PARAMS, classHe, scoreColor, summarize, textOn, unranked } from '../lib/model';
 import { CRIT, CROSS, FAMILIES } from '../data/criteria';
 import { CHAPTER_HEX, IND } from '../data/indicators';
 import { QMAP } from '../data/quarters';
@@ -12,12 +13,13 @@ import Rich from '../components/Rich';
 import { streetStory } from '../lib/story';
 import { TIERS } from '../lib/actions';
 
+const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['m', 'מדידות'], ['i360', 'שכונה 360']] as const;
 const STATUS_HE: Record<string, string> = { planning: 'בתכנון', approved: 'מאושרת', permit: 'בהיתר', construction: 'בביצוע', completed: 'הושלמה' };
 
 export default function StreetPage({ model, route }: { model: Model; route: Route }) {
   const x = model.byCode[Number(route.id)];
   const [open, setOpen] = useState<string | null>(null);
-  const tab = route.q.get('t') ?? 'ins';
+  const tab = TABS.find(([k]) => k === route.q.get('t'))?.[0] ?? 'ins';
   const sum = useMemo(() => (x?.s.quarter_id ? summarize(model, [x.s.quarter_id], x.s.quarter_id) : null), [model, x]);
 
   if (!x) return <main className="body"><p className="empty">הרחוב לא נמצא. חפשו אותו בשדה החיפוש למעלה, או <a href="#/">חזרו למפת העיר</a>.</p></main>;
@@ -35,7 +37,6 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
   const sel = open ? PARAMS.find((p) => p.key === open) : null;
   const story = streetStory(model, x);
 
-  const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['m', 'מדידות'], ['i360', 'שכונה 360']] as const;
 
   return (
     <main className="atlas">
@@ -45,7 +46,8 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
           {x.s.quarter_source === 'location' && <span className="muted"> · שיוך לרובע לפי מיקום</span>}
         </p>
         <h1 className="insight-line street-name">{x.s.name}</h1>
-        <div className="a-kpi">
+        <div className="a-kpi street-kpi">
+          <span className="street-shape"><Sketch lines={[{ key: x.s.code, line: x.s.line, color: scoreColor(x.total), w: 4, top: true }]} label={`צורת ${x.s.name}`} /></span>
           <ScoreBadge v={x.total} sub={`**${Math.round(x.points * 10) / 10}** מתוך **${model.maxPoints}** נקודות${sum && rank ? ` · מקום **${rank}** מתוך **${sum.streets.length}**` : ''}`} />
           {sum && <div className="prev-next">
             <button className="press btn" disabled={!prev} onClick={() => prev && go(`#/s/${prev.s.code}?t=${tab}`)} title={prev?.s.name}>הקודם בדירוג</button>
@@ -68,6 +70,17 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
         <ReadTabs tabs={TABS} cur={tab} />
         <div className="a-pane">
           {tab === 'ins' && <>
+            <div className="graphs">
+              <div className="graph">
+                <h3 className="mini-h">הרחוב כסרגל</h3>
+                <Ruler len={x.s.m.len ?? 0} />
+                <Rich as="p" className="src">{`**${x.s.m.junctions ?? '—'}** צמתים · בלוק ממוצע **${x.s.m.block != null ? Math.round(x.s.m.block) : '—'}** מ' · סוג: ${classHe(x.s.m.class)}`}</Rich>
+              </div>
+              {sum && sum.streets.length > 1 && <div className="graph">
+                <h3 className="mini-h">{`מול ${sum.streets.length} הרחובות של ${q?.name ?? 'הרובע'}`}</h3>
+                <Strip values={sum.streets.map((y) => ({ code: y.s.code, v: y.total!, name: y.s.name }))} mark={x.s.code} onPick={(c) => go(`#/s/${c}`)} />
+              </div>}
+            </div>
             {unranked(x.s.m) && <p className="tone tone-problem">{unranked(x.s.m)}</p>}
             {x.s.m.geo === 'trimmed' && <p className="src">לשם הרחוב נמצאו כמה קטעים בעיר. נמדד רק הקטע שבתוך הרובע.</p>}
             <Rich as="p" className="lead">{best && worst && best !== worst ? `==החוזקה: **${best.label}** (${fmtVal(best, x)}).== החולשה: **${worst.label}** (${fmtVal(worst, x)}, היעד ${worst.target}).` : 'אין מספיק מדידות לרחוב הזה.'}</Rich>

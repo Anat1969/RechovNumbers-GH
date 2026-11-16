@@ -49,17 +49,23 @@ async function mock(p) {
     ok(await p.locator('.a-head .hist rect').count() === 10, 'בית: התפלגות הציונים בכותרת');
     await p.getByRole('tab', { name: 'מעשים' }).click();
     ok(await p.locator('.tier').count() === 3, 'בית: סולם פעולה בשלוש דרגות');
+    ok(await p.locator('.tier-item.has-art .art svg').count() >= 3, 'בית: מפת "איפה" לכל פעולה');
     await p.getByRole('tab', { name: 'מספרים' }).click();
     ok(await p.locator('.prof-row').count() >= 6, 'בית, מספרים: פרופיל העיר לפי פרמטר');
     ok(await p.locator('.compare .cmp-row').count() >= 6, 'בית, מספרים: השוואת שני רחובות');
     await p.locator('.prof-row').first().click();
     ok(p.url().includes('c=') && (await p.locator('.a-map h2').innerText()).includes('בכל רחוב'), 'בית: לחיצה על פרמטר צובעת את מפת העיר');
-    await p.getByRole('tab', { name: 'רבעים' }).click();
-    ok(await p.locator('.tile').count() >= 10, 'בית: אריח לכל רובע');
+    await p.getByRole('tab', { name: 'תובנות' }).click();
+    ok(await p.locator('.tile').count() >= 10, 'בית: אריח לכל רובע בלשונית תובנות');
+    ok(await p.locator('.answer.has-art .art svg path').count() > 50, 'בית: ציור לכל תשובה');
 
     await p.locator('.tile').first().click();
     await p.waitForSelector('.answers .answer');
     ok(p.url().includes('#/q/'), 'אריח פותח את הרובע');
+    const cells = await p.locator('.gallery .g-cell').count();
+    ok(cells > 3 && await p.locator('.answer.has-art').count() === 3, `רובע: ${cells} רחובות בגלריה באותו קנה מידה, וציור לכל תשובה`);
+    await p.locator('.gallery .g-cell').nth(2).click();
+    ok(p.url().includes('s='), 'רובע: לחיצה על רחוב בגלריה בוחרת אותו');
     await p.getByRole('tab', { name: 'דירוג' }).click();
     await p.waitForSelector('.rank .row');
     const rows = await p.locator('.rank .row').count();
@@ -103,6 +109,7 @@ async function mock(p) {
     await p.waitForSelector('.badge-n');
     ok(p.url().includes('#/s/'), 'מעבר לדף הרחוב');
     ok(await p.locator('.fam').count() === 5, 'דף רחוב: חמש המשפחות בלשונית תובנות');
+    ok(await p.locator('svg.ruler').isVisible() && await p.locator('svg.strip circle').count() > 3 && await p.locator('.street-shape svg path').count() >= 1, 'דף רחוב: סרגל, פס דירוג מול הרובע וצורת הרחוב');
     await p.getByRole('tab', { name: 'מדידות' }).click();
     await p.locator('.ptable tbody tr').first().click();
     ok((await p.locator('.detail').innerText()).includes('איך חושב'), 'דף רחוב: לחיצה על פרמטר מסבירה איך חושב');
@@ -165,7 +172,7 @@ async function mock(p) {
       const m = await b.newPage({ viewport: vp, reducedMotion: 'reduce' });
       await mock(m);
       m.on('pageerror', (e) => errors.push(e.message));
-      for (const h of ['', '#/?t=num', '#/?t=qs', '#/q/q-a', '#/q/q-a?t=act', '#/s/161', '#/s/161?t=m', '#/a', '#/x', '#/m']) {
+      for (const h of ['', '#/?t=num', '#/?t=act', '#/?t=story', '#/q/q-a', '#/q/q-a?t=act', '#/s/161', '#/s/161?t=m', '#/a', '#/x', '#/m']) {
         await m.goto(BASE + h, { waitUntil: 'networkidle' });
         await m.waitForTimeout(500);
         const hs = await m.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);

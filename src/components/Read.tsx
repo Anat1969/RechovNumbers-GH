@@ -42,15 +42,53 @@ export function ScoreBadge({ v, sub }: { v: number | null; sub?: string }) {
 }
 
 /** תשובה: שאלה קטנה, תשובה גדולה עם ציון, ושורת הסבר. כפתור שבוחר במפה. */
-export function Answer({ q, name, score, sub, kind, pressed, onClick }: {
-  q: string; name?: string | null; score?: number | null; sub?: string; kind: 'good' | 'bad' | 'gap'; pressed?: boolean; onClick?: () => void;
+export function Answer({ q, name, score, sub, kind, pressed, onClick, art }: {
+  q: string; name?: string | null; score?: number | null; sub?: string; kind: 'good' | 'bad' | 'gap'; pressed?: boolean; onClick?: () => void; art?: ReactNode;
 }) {
   return (
-    <button className={`answer press k-${kind}`} aria-pressed={pressed} onClick={onClick} disabled={!name}>
+    <button className={`answer press k-${kind}${art ? ' has-art' : ''}`} aria-pressed={pressed} onClick={onClick} disabled={!name}>
+      {art && <span className="art">{art}</span>}
       <span className="q">{q}</span>
       <span className="big">{name ?? '—'}{score != null && <span className="score" style={{ background: scoreColor(score), color: textOn(score) }}>{score}</span>}</span>
       {sub && <Rich as="span" className="sub">{sub}</Rich>}
     </button>
+  );
+}
+
+/** פס דירוג: כל רחוב נקודה על סרגל 0 עד 100, בצבע הציון. הרחוב הנבחר גדול ועם שם. */
+export function Strip({ values, mark, markLabel, onPick }: { values: { code: number; v: number; name: string }[]; mark?: number | null; markLabel?: string; onPick?: (code: number) => void }) {
+  const m = values.find((x) => x.code === mark);
+  return (
+    <svg className="strip" viewBox="0 0 400 74" role="img" aria-label="כל הרחובות על סרגל הציון" style={{ direction: 'ltr' }}>
+      <line x1="10" x2="390" y1="44" y2="44" stroke="#1A1A18" strokeWidth="1.2" />
+      {[0, 25, 50, 75, 100].map((t) => <g key={t}><line x1={390 - t * 3.8} x2={390 - t * 3.8} y1="44" y2="50" stroke="#1A1A18" /><text x={390 - t * 3.8} y="64" textAnchor="middle" className="hist-x">{t}</text></g>)}
+      {values.map((x, i) => (
+        <circle key={x.code} cx={390 - x.v * 3.8} cy={36 - (i % 3) * 6} r={x.code === mark ? 0 : 4.2} fill={scoreColor(x.v)} stroke="#1A1A18" strokeOpacity={0.5} strokeWidth={0.8} onClick={() => onPick?.(x.code)} style={{ cursor: onPick ? 'pointer' : undefined }}><title>{`${x.name}: ${x.v}`}</title></circle>
+      ))}
+      {m && <g>
+        <line x1={390 - m.v * 3.8} x2={390 - m.v * 3.8} y1="14" y2="44" stroke="#1A1A18" strokeWidth="1.4" />
+        <circle cx={390 - m.v * 3.8} cy={34} r={8} fill={scoreColor(m.v)} stroke="#1A1A18" strokeWidth={1.6} />
+        <text x={Math.min(360, Math.max(40, 390 - m.v * 3.8))} y="10" textAnchor="middle" className="strip-l">{markLabel ?? m.name}</text>
+      </g>}
+    </svg>
+  );
+}
+
+/** הרחוב כסרגל: קו באורך הרחוב, שנתה כל 100 מ', ומספר בכל 100. אותו קנה מידה לכל רחוב (עד 1.2 ק"מ). */
+export function Ruler({ len }: { len: number }) {
+  const max = Math.max(1200, Math.ceil(len / 100) * 100), px = (m: number) => 390 - (m / max) * 380;
+  return (
+    <svg className="ruler" viewBox="0 0 400 46" role="img" aria-label={`אורך הרחוב: ${Math.round(len)} מטר`} style={{ direction: 'ltr' }}>
+      <line x1={px(0)} x2={px(max)} y1="20" y2="20" stroke="#E5E4E0" strokeWidth="6" />
+      <line x1={px(0)} x2={px(len)} y1="20" y2="20" stroke="#1A1A18" strokeWidth="6" />
+      {Array.from({ length: Math.floor(max / 100) + 1 }, (_, i) => i * 100).map((m) => (
+        <g key={m}>
+          <line x1={px(m)} x2={px(m)} y1={m % 500 ? 25 : 23} y2={m % 500 ? 31 : 35} stroke={m <= len ? '#1A1A18' : '#B9B8B2'} strokeWidth={m % 500 ? 1 : 1.6} />
+          {m % 500 === 0 && <text x={px(m)} y="45" textAnchor="middle" className="hist-x">{m}</text>}
+        </g>
+      ))}
+      <text x={px(len)} y="11" textAnchor="middle" className="strip-l">{`${Math.round(len)} מ'`}</text>
+    </svg>
   );
 }
 

@@ -9,9 +9,10 @@ import { go, setParam, type Route } from '../lib/route';
 import Rich from '../components/Rich';
 import { MiniMap } from '../components/MiniMap';
 import StreetMap, { type MapMark } from '../components/StreetMap';
+import { GroupSketch } from '../components/Sketch';
 import { Answer, Bar, ColorSelect, Histogram, Legend, Lines, ReadTabs, ScoreBadge } from '../components/Read';
 
-const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['qs', 'רבעים'], ['num', 'מספרים']] as const;
+const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['num', 'מספרים']] as const;
 
 function Compare({ model, a, b }: { model: Model; a: Scored; b: Scored }) {
   return (
@@ -39,7 +40,7 @@ function center(streets: Scored[]): [number, number] | null {
 export default function Home({ model, route }: { model: Model; route: Route }) {
   const cs = useMemo(() => cityStory(model), [model]);
   const plan = useMemo(() => actionPlan(model, cs.city.streets), [model, cs]);
-  const tab = route.q.get('t') ?? 'ins';
+  const tab = TABS.find(([k]) => k === route.q.get('t'))?.[0] ?? 'ins';
   const colorKey = route.q.get('c');
   const colorBy = colorKey && PMAP[colorKey] && model.entering.includes(PMAP[colorKey]) ? PMAP[colorKey] : null;
   const cross = crossTotals();
@@ -90,9 +91,21 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
         <div className="a-pane">
           {tab === 'ins' && <>
             <div className="answers">
-              <Answer kind="good" q="איזה רובע מוביל?" name={top?.name} score={top?.sum.avg} sub={`הממוצע הגבוה מתוך **${cs.ranks.length}** רבעי המגורים.`} onClick={() => top && go(`#/q/${top.id}`)} />
-              <Answer kind="bad" q="איזה רובע צריך הכי הרבה עזרה?" name={low?.name} score={low?.sum.avg} sub={low?.sum.weakParam ? `החולשה העיקרית: **${low.sum.weakParam.p.label}**.` : ''} onClick={() => low && go(`#/q/${low.id}`)} />
-              <Answer kind="gap" q="מה הכי חסר בעיר?" name={weak?.p.label} score={weak?.score} sub={`רק **${weak?.meet}%** מהרחובות ביעד. לחיצה צובעת את המפה.`} pressed={colorBy?.key === weak?.p.key} onClick={() => setParam('c', colorBy?.key === weak?.p.key ? null : weak.p.key)} />
+              <Answer kind="good" q="איזה רובע מוביל?" name={top?.name} score={top?.sum.avg} sub={`הממוצע הגבוה מתוך **${cs.ranks.length}** רבעי המגורים.`} onClick={() => top && go(`#/q/${top.id}`)}
+                art={top && <GroupSketch streets={top.sum.streets} />} />
+              <Answer kind="bad" q="איזה רובע צריך הכי הרבה עזרה?" name={low?.name} score={low?.sum.avg} sub={low?.sum.weakParam ? `החולשה העיקרית: **${low.sum.weakParam.p.label}**.` : ''} onClick={() => low && go(`#/q/${low.id}`)}
+                art={low && <GroupSketch streets={low.sum.streets} />} />
+              <Answer kind="gap" q="מה הכי חסר בעיר?" name={weak?.p.label} score={weak?.score} sub={`רק **${weak?.meet}%** מהרחובות ביעד. לחיצה צובעת את המפה.`} pressed={colorBy?.key === weak?.p.key} onClick={() => setParam('c', colorBy?.key === weak?.p.key ? null : weak.p.key)}
+                art={<GroupSketch streets={cs.city.streets} by={weak?.p.key} thin />} />
+            </div>
+            <h3 className="mini-h">{`${cs.ranks.length} הרבעים, מהחזק לחלש`}</h3>
+            <div className="tiles">
+              {cs.ranks.map(({ id, name, sum }) => (
+                <button key={id} className="tile press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ממוצע ${sum.avg}`}>
+                  <span className="t-top"><span className="t-name">{name.replace('רובע ', '')}</span><span className="t-score" style={{ color: scoreColor(sum.avg) }}>{sum.avg}</span></span>
+                  <MiniMap streets={sum.streets} />
+                </button>
+              ))}
             </div>
             <h3 className="mini-h">מה המספרים אומרים</h3>
             <Lines lines={cs.lines} />
@@ -114,7 +127,8 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
                   <h3 className="mini-h">{TIERS[t].title}</h3>
                   <p className="src">{TIERS[t].sub}</p>
                   {rows.map((r) => (
-                    <div key={r.p.key} className="tier-item">
+                    <div key={r.p.key} className="tier-item has-art">
+                      <span className="art"><GroupSketch streets={cs.city.streets} hl={new Set(r.streets.map((x) => x.s.code))} thin label={`איפה: ${r.p.label}`} /></span>
                       <Rich as="strong">{`${r.p.label}: **${r.streets.length}** רחובות, **${r.stake}** נקודות`}</Rich>
                       <span>{t === 'plan' ? r.guideline : r.existing}</span>
                       <span className="src">אחראי: {r.who}</span>
@@ -127,18 +141,6 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
             <button className="press btn" onClick={() => go('#/a')}>תוכנית הפעולה המלאה, לפי רובע</button>
           </>}
 
-          {tab === 'qs' && <>
-            <p className="src">כל קו הוא רחוב, בצבע הציון שלו. מהחזק לחלש. לחיצה נכנסת לרובע.</p>
-            <div className="tiles">
-              {cs.ranks.map(({ id, name, sum }) => (
-                <button key={id} className="tile press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ממוצע ${sum.avg}`}>
-                  <span className="t-top"><span className="t-name">{name}</span><span className="t-score" style={{ color: scoreColor(sum.avg) }}>{sum.avg}</span></span>
-                  <MiniMap streets={sum.streets} />
-                  <span className="t-sub">{sum.streets.length} רחובות · מוביל: {sum.best?.s.name}</span>
-                </button>
-              ))}
-            </div>
-          </>}
 
           {tab === 'num' && <>
             <h3 className="mini-h">איפה העיר חזקה, ואיפה היא נתקעת</h3>
