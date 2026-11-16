@@ -30,7 +30,8 @@ export function extentM(line: number[][][] | null) {
   return Math.max((b[2] - b[0]) * K * cos, (b[3] - b[1]) * K);
 }
 
-export function Sketch({ lines, box, className = 'sketch', label, scale = 1, cased = true }: { lines: SLine[]; box?: Box | null; className?: string; label?: string; scale?: number; cased?: boolean }) {
+export function Sketch({ lines, box, className = 'sketch', label, scale = 1, cased = true, draw }: { lines: SLine[]; box?: Box | null; className?: string; label?: string; scale?: number; cased?: boolean; draw?: number }) {
+  // draw: עיכוב בשניות. הקווים נמתחים, והבולטים (top) אחרונים, כדי שהעין תגיע אליהם
   const d = useMemo(() => {
     const b = box ?? boxOf(lines.map((l) => l.line));
     if (!b) return null;
@@ -43,16 +44,16 @@ export function Sketch({ lines, box, className = 'sketch', label, scale = 1, cas
   if (!d) return <svg className={className} />;
   return (
     <svg className={className} viewBox={d.vb} preserveAspectRatio="xMidYMid meet" role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
-      {cased && d.paths.map((p) => <path key={'c' + p.key} d={p.d} fill="none" stroke="#1A1A18" strokeOpacity={p.top ? 0.85 : 0.4} strokeWidth={((p.w ?? 2.2) + 1.6) * scale} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
-      {d.paths.map((p) => <path key={p.key} d={p.d} fill="none" stroke={p.color} strokeWidth={(p.w ?? 2.2) * scale} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+      {cased && d.paths.map((p) => <path key={'c' + p.key} d={p.d} className={draw != null ? 'draw' : undefined} pathLength={draw != null ? 1 : undefined} style={draw != null ? { animationDelay: `${draw + (p.top ? 0.6 : 0)}s` } : undefined} fill="none" stroke="#1A1A18" strokeOpacity={p.top ? 0.85 : 0.4} strokeWidth={((p.w ?? 2.2) + 1.6) * scale} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+      {d.paths.map((p) => <path key={p.key} d={p.d} className={draw != null ? 'draw' : undefined} pathLength={draw != null ? 1 : undefined} style={draw != null ? { animationDelay: `${draw + (p.top ? 0.6 : 0)}s` } : undefined} fill="none" stroke={p.color} strokeWidth={(p.w ?? 2.2) * scale} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
     </svg>
   );
 }
 
 const GREY = '#D9D8D3';
 /** שרטוט קבוצת רחובות: צבע לפי ציון, או לפי פרמטר, או הדגשה של חלק מהם. */
-export function GroupSketch({ streets, by, hl, hlColor = '#A6362C', thin, label }: {
-  streets: Scored[]; by?: string | null; hl?: Set<number>; hlColor?: string; thin?: boolean; label?: string;
+export function GroupSketch({ streets, by, hl, hlColor = '#A6362C', thin, label, draw }: {
+  streets: Scored[]; by?: string | null; hl?: Set<number>; hlColor?: string; thin?: boolean; label?: string; draw?: number;
 }) {
   // בקנה מידה של עיר: קו דק בלי מתאר, כדי שהרשת תיקרא ולא תהפוך לכתם
   const lines = useMemo(() => streets.map((x) => {
@@ -61,7 +62,7 @@ export function GroupSketch({ streets, by, hl, hlColor = '#A6362C', thin, label 
     const color = hl ? (on ? hlColor : GREY) : by ? scoreColor(v == null ? null : v * 100) : scoreColor(x.total);
     return { key: x.s.code, line: x.s.line, color, w: (thin ? 0.9 : 2.2) + (on ? (thin ? 0.5 : 1.4) : 0), top: on };
   }), [streets, by, hl, hlColor, thin]);
-  return <Sketch lines={lines} label={label} cased={!thin} />;
+  return <Sketch lines={lines} label={label} cased={!thin} draw={draw} />;
 }
 
 /** רחוב אחד בתוך הרובע שלו: הרחוב בצבע הציון, השאר אפור. */
@@ -86,4 +87,12 @@ export function StreetGallery({ streets, sel, onSelect }: { streets: Scored[]; s
       <p className="src g-note">{`כל המשבצות באותו קנה מידה: רוחב משבצת ${Math.round(span)} מ'. הצבע: הציון.`}</p>
     </div>
   );
+}
+
+/** מרכז קבוצת רחובות: חציון הנקודות, כדי שקטע רחוק לא יזיז את התווית. */
+export function centerOf(streets: Scored[]): [number, number] | null {
+  const pts = streets.flatMap((x) => (x.s.line ?? []).flat());
+  if (!pts.length) return null;
+  const m = (a: number[]) => a.sort((u, v) => u - v)[a.length >> 1];
+  return [m(pts.map((p) => p[0])), m(pts.map((p) => p[1]))];
 }

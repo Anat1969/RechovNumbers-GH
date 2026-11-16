@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useSweep } from '../components/Motion';
 import type { Model, Scored } from '../lib/model';
 import { PARAMS, PMAP, crossTotals, scoreColor } from '../lib/model';
 import { IND } from '../data/indicators';
@@ -9,7 +10,7 @@ import { go, setParam, type Route } from '../lib/route';
 import Rich from '../components/Rich';
 import { MiniMap } from '../components/MiniMap';
 import StreetMap, { type MapMark } from '../components/StreetMap';
-import { GroupSketch } from '../components/Sketch';
+import { GroupSketch, centerOf } from '../components/Sketch';
 import { Answer, Bar, ColorSelect, Histogram, Legend, Lines, ReadTabs, ScoreBadge } from '../components/Read';
 
 const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['num', 'מספרים']] as const;
@@ -27,14 +28,6 @@ function Compare({ model, a, b }: { model: Model; a: Scored; b: Scored }) {
       ))}
     </div>
   );
-}
-
-/** מרכז רובע: חציון הנקודות של הרחובות שלו, כדי שקטע רחוק לא יזיז את התווית. */
-function center(streets: Scored[]): [number, number] | null {
-  const pts = streets.flatMap((x) => (x.s.line ?? []).flat());
-  if (!pts.length) return null;
-  const m = (a: number[]) => a.sort((u, v) => u - v)[a.length >> 1];
-  return [m(pts.map((p) => p[0])), m(pts.map((p) => p[1]))];
 }
 
 export default function Home({ model, route }: { model: Model; route: Route }) {
@@ -59,9 +52,35 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
     };
   }), [cs, colorBy]);
   const marks: MapMark[] = useMemo(() => cs.ranks.flatMap((r) => {
-    const c = center(r.sum.streets);
+    const c = centerOf(r.sum.streets);
     return c ? [{ key: r.id, lon: c[0], lat: c[1], title: r.name.replace('רובע ', ''), value: r.sum.avg, color: scoreColor(r.sum.avg), onClick: () => go(`#/q/${r.id}`) }] : [];
   }), [cs]);
+
+  // התנועה: הרחובות נמתחים מהחזק לחלש. הכיתוב מראה את סף הציון יורד, ובסוף את התמונה המלאה.
+  const SPAN = 3.4, DUR = 0.9;
+  const [replay, setReplay] = useState(0);
+  const order = cs.city.streets; // כבר ממוין מהגבוה לנמוך
+  const rankIdx = useMemo(() => Object.fromEntries(order.map((x, i) => [x.s.code, i])), [order]);
+  const delayOf = (code: number) => ((rankIdx[code] ?? order.length) / order.length) * SPAN;
+  const sweep = useSweep(SPAN + DUR, replay);
+  const shownN = Math.min(order.length, Math.round((sweep * (SPAN + DUR)) / SPAN * order.length));
+  const floor = shownN ? order[Math.min(order.length - 1, shownN - 1)].total : null;
+  const overlay = (
+    <div className={"sweep" + (sweep >= 1 ? " done" : "")} aria-live="off">
+      {sweep < 1 ? (
+        <>
+          <span className="sweep-l">נמתחים מהחזק לחלש</span>
+          <span className="sweep-v"><span className="sweep-sw" style={{ background: scoreColor(floor) }} />ציון <bdi className="num">{floor ?? '—'}</bdi> ומעלה · <bdi className="num">{shownN}</bdi> רחובות</span>
+          <span className="sweep-bar"><i style={{ width: `${sweep * 100}%` }} /></span>
+        </>
+      ) : (
+        <>
+          <span className="sweep-l">{`כל ${order.length} הרחובות`}</span>
+          <button className="press btn sweep-btn" onClick={() => setReplay((r) => r + 1)}>הפעלה מחדש</button>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <main className="atlas">
@@ -69,7 +88,7 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
         <p className="crumbs">אשדוד</p>
         <Rich as="h1" className="insight-line">{`==החסר הגדול של אשדוד: **${weak.p.label}**.==`}</Rich>
         <div className="a-kpi">
-          <ScoreBadge v={cs.city.avg} sub={`ממוצע **${cs.city.streets.length}** רחובות`} />
+          <ScoreBadge count v={cs.city.avg} sub={`ממוצע **${cs.city.streets.length}** רחובות`} />
           <div className="a-hist"><Histogram hist={cs.hist} small /><span className="src">כמה רחובות בכל ציון</span></div>
         </div>
       </header>
@@ -81,6 +100,7 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
         </div>
         <StreetMap
           items={items} ground={false} thin={0.55} marks={marks} label="מפת הרחובות של אשדוד"
+          delayOf={colorBy ? undefined : delayOf} drawDur={DUR} replay={replay} overlay={colorBy ? undefined : overlay} marksDelay={colorBy ? 0 : SPAN + DUR}
           onSelect={(code) => { const x = model.byCode[code]; if (x?.s.quarter_id) go(`#/q/${x.s.quarter_id}?s=${code}`); }}
           legend={<Legend title={colorBy ? `${colorBy.label}: ציון מול היעד` : 'ציון רחוב, 0 עד 100'} note="המספר ליד שם הרובע: הממוצע שלו. לחיצה נכנסת לרובע." />}
         />
@@ -92,18 +112,18 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
           {tab === 'ins' && <>
             <div className="answers">
               <Answer kind="good" q="איזה רובע מוביל?" name={top?.name} score={top?.sum.avg} sub={`הממוצע הגבוה מתוך **${cs.ranks.length}** רבעי המגורים.`} onClick={() => top && go(`#/q/${top.id}`)}
-                art={top && <GroupSketch streets={top.sum.streets} />} />
+                art={top && <GroupSketch streets={top.sum.streets} draw={0.3} />} />
               <Answer kind="bad" q="איזה רובע צריך הכי הרבה עזרה?" name={low?.name} score={low?.sum.avg} sub={low?.sum.weakParam ? `החולשה העיקרית: **${low.sum.weakParam.p.label}**.` : ''} onClick={() => low && go(`#/q/${low.id}`)}
-                art={low && <GroupSketch streets={low.sum.streets} />} />
+                art={low && <GroupSketch streets={low.sum.streets} draw={0.6} />} />
               <Answer kind="gap" q="מה הכי חסר בעיר?" name={weak?.p.label} score={weak?.score} sub={`רק **${weak?.meet}%** מהרחובות ביעד. לחיצה צובעת את המפה.`} pressed={colorBy?.key === weak?.p.key} onClick={() => setParam('c', colorBy?.key === weak?.p.key ? null : weak.p.key)}
-                art={<GroupSketch streets={cs.city.streets} by={weak?.p.key} thin />} />
+                art={<GroupSketch streets={cs.city.streets} by={weak?.p.key} thin draw={0.9} />} />
             </div>
             <h3 className="mini-h">{`${cs.ranks.length} הרבעים, מהחזק לחלש`}</h3>
             <div className="tiles">
-              {cs.ranks.map(({ id, name, sum }) => (
+              {cs.ranks.map(({ id, name, sum }, i) => (
                 <button key={id} className="tile press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ממוצע ${sum.avg}`}>
                   <span className="t-top"><span className="t-name">{name.replace('רובע ', '')}</span><span className="t-score" style={{ color: scoreColor(sum.avg) }}>{sum.avg}</span></span>
-                  <MiniMap streets={sum.streets} />
+                  <MiniMap streets={sum.streets} draw={1 + i * 0.12} />
                 </button>
               ))}
             </div>

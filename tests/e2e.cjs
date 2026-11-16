@@ -37,6 +37,9 @@ async function mock(p) {
     const [mapBox, bodyBox] = [await box('.a-map'), await box('.a-body')];
     ok(mapBox.x < bodyBox.x && mapBox.width > bodyBox.width * 1.3, 'אטלס: המפה גדולה ובצד שמאל, טור הקריאה מימין');
     ok(await p.locator('.map-wrap path.street').count() > 300, 'בית: מפת העיר עם כל הרחובות');
+    ok(await p.locator('.sweep').isVisible(), 'בית: תנועה, הרחובות נמתחים מהחזק לחלש עם כיתוב רץ');
+    await p.waitForSelector('.sweep.done', { timeout: 8000 });
+    ok(await p.getByRole('button', { name: 'הפעלה מחדש' }).isVisible(), 'בית: התנועה נעצרת, ויש הפעלה מחדש');
     ok(await p.locator('.map-wrap .mark').count() >= 10, 'בית: תווית לכל רובע על המפה');
     ok(await p.locator('.answers .answer').count() === 3, 'בית: שלוש תשובות בלשונית תובנות');
     ok(await p.locator('.a-tab.k-ins[aria-selected="true"]').count() === 1, 'תובנות היא הלשונית הראשונה');
@@ -146,8 +149,12 @@ async function mock(p) {
     await p.locator('.tabs').getByRole('button', { name: 'פעולות' }).click();
     await p.waitForSelector('.act-card');
     ok(await p.locator('.tier').count() === 3 && await p.locator('.act-card').count() >= 3, 'פעולות: שלוש דרגות וכרטיסי פעולה');
-    await p.locator('.chips .chip-t').first().click();
+    ok(await p.locator('.a-map .map-wrap path.street').count() > 300 && await p.locator('.map-wrap .mark').count() >= 10, 'פעולות: מפת העיר עם מספר הרחובות שצריכים את הפעולה בכל רובע');
+    await p.locator('.act-card .act-top').nth(1).click();
+    ok(p.url().includes('p=') && await p.locator('.act-card.on').count() === 1, 'פעולות: בחירת פעולה מציירת אותה במפה');
+    await p.getByLabel('בחירת רובע לתוכנית').selectOption('q-a');
     ok(p.url().includes('q=q-a'), 'פעולות: סינון לפי רובע נשמר בכתובת');
+    await p.getByRole('tab', { name: 'הנחיות לתכנון חדש' }).click();
     ok(await p.locator('.guides li').count() === 13, 'פעולות: הנחיות לתכנון חדש לכל פרמטר');
     await p.locator('.tabs').getByRole('button', { name: 'איך מודדים' }).click();
     await p.waitForSelector('.method .card');
@@ -182,6 +189,8 @@ async function mock(p) {
       await m.waitForSelector('.map-wrap .street');
       const anim = await m.evaluate(() => getComputedStyle(document.querySelector('.map-wrap .street')).animationName);
       ok(anim === 'none', `${vp.width}px: הפחתת תנועה מכובדת`);
+      const dash = await m.evaluate(() => getComputedStyle(document.querySelector('.map-wrap .street')).strokeDashoffset);
+      ok(dash === '0' || dash === '0px', `${vp.width}px: בהפחתת תנועה הקווים גלויים`);
       await m.close();
     }
     ok(errors.length === 0, 'אין שגיאות JavaScript ' + errors.join(' | '));

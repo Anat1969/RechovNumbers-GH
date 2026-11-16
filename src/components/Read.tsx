@@ -4,6 +4,7 @@ import type { Model, Param } from '../lib/model';
 import { scoreColor, textOn } from '../lib/model';
 import { setParam } from '../lib/route';
 import Rich from './Rich';
+import { CountUp } from './Motion';
 
 export function Bar({ v, color }: { v: number; color?: string }) {
   return <span className="bar"><i style={{ width: `${Math.max(0, Math.min(100, v))}%`, background: color ?? scoreColor(v) }} /></span>;
@@ -18,7 +19,7 @@ export function Histogram({ hist, small }: { hist: number[]; small?: boolean }) 
         const h = (n / max) * 92;
         return (
           <g key={i}>
-            <rect x={300 - (i + 1) * 30 + 3} y={100 - h} width={24} height={h} fill={scoreColor(i * 10 + 5)} />
+            <rect className="grow" style={{ animationDelay: `${0.15 + i * 0.07}s` }} x={300 - (i + 1) * 30 + 3} y={100 - h} width={24} height={h} fill={scoreColor(i * 10 + 5)} />
             {!small && <text x={300 - i * 30 - 15} y={100 - h - 3} textAnchor="middle" className="hist-n">{n || ''}</text>}
             {(!small || i % 5 === 0) && <text x={300 - i * 30 - 15} y={116} textAnchor="middle" className="hist-x">{i * 10}</text>}
           </g>
@@ -32,10 +33,10 @@ export function Histogram({ hist, small }: { hist: number[]; small?: boolean }) 
 export const histOf = (totals: number[]) => Array.from({ length: 10 }, (_, i) => totals.filter((t) => Math.min(9, Math.floor(t / 10)) === i).length);
 
 /** ציון גדול: המספר הוא המוקד של הכותרת. */
-export function ScoreBadge({ v, sub }: { v: number | null; sub?: string }) {
+export function ScoreBadge({ v, sub, count }: { v: number | null; sub?: string; count?: boolean }) {
   return (
     <div className="badge">
-      <span className="badge-n" style={{ background: scoreColor(v), color: textOn(v) }}>{v ?? '—'}</span>
+      <span className="badge-n" style={{ background: scoreColor(v), color: textOn(v) }}>{v == null ? '—' : count ? <CountUp to={v} /> : v}</span>
       {sub && <Rich as="span" className="badge-s">{sub}</Rich>}
     </div>
   );

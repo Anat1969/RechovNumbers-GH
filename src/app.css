@@ -617,3 +617,31 @@ h1.insight-line { font-size: clamp(24px, 2.1vw, 34px); line-height: 1.3; }
 .prev-next .btn { white-space: nowrap; }
 .tier-item.has-art { grid-template-columns: minmax(0, 1fr) 110px; }
 .tier-item .art { width: 110px; height: 110px; }
+
+/* ===== תנועה בדף הבית (16.11.2026): נכנסת פעם אחת, לפי הנתון, ונעצרת ===== */
+.grow { transform-box: fill-box; transform-origin: 50% 100%; animation: grow .7s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.fade-in { animation: fadein .6s ease both; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.sketch .draw, .tile svg .draw { animation-duration: .9s; }
+.sweep { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 3; display: grid; justify-items: center; gap: 4px; background: rgba(255,255,255,.94); box-shadow: var(--shadow-1); padding: 8px 14px 10px; min-width: 260px; }
+.sweep-l { font-size: 13.5px; color: var(--ink-soft); }
+.sweep-v { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.sweep-sw { width: 14px; height: 14px; display: inline-block; }
+.sweep-bar { width: 100%; height: 3px; background: var(--rule-soft); position: relative; }
+.sweep-bar i { position: absolute; inset-block: 0; right: 0; background: var(--ink); }
+.sweep-btn { padding: 6px 14px; font-size: 14.5px; }
+@media (prefers-reduced-motion: reduce) {
+  .draw { stroke-dasharray: none !important; stroke-dashoffset: 0 !important; }
+  .grow { transform: none; }
+  .fade-in { opacity: 1; }
+}
+@media (max-width: 560px) { .sweep { min-width: 0; padding: 6px 10px; } .sweep-v { font-size: 15px; } }
+.sweep.done { top: auto; bottom: 44px; left: 12px; transform: none; min-width: 0; grid-auto-flow: column; align-items: center; gap: 10px; padding: 6px 10px; }
+.key-sw { display: inline-block; width: 18px; height: 5px; vertical-align: 3px; margin-inline-end: 6px; }
+.act-card { padding: 10px 0; }
+.act-card .act-top { display: flex; width: 100%; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 400; font-size: 16.5px; }
+.act-card .act-top strong { font-weight: 600; }
+.act-card.on { box-shadow: inset -4px 0 0 var(--brick); padding-inline-start: 12px; background: #FBF4F3; }
+.act-card .label { margin-inline-end: 6px; }
+.tier { gap: 4px; }

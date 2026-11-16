@@ -4,7 +4,7 @@ import { SUPABASE, ANON } from '../lib/data';
 
 export interface MapItem { s: Street; color: string; label?: boolean; tip: string; weight?: number }
 /** תווית שטח (רובע) במרכז הרחובות שלו: שם וציון, ולחיצה נכנסת אליו. */
-export interface MapMark { key: string; lon: number; lat: number; title: string; value?: number | null; color?: string; onClick?: () => void }
+export interface MapMark { key: string; lon: number; lat: number; title: string; value?: number | null; color?: string; ink?: string; onClick?: () => void }
 
 /** רוחב הקו לפי סוג הדרך, בפיקסלים: עורק רחב, רחוב מגורים צר. */
 const WIDTH: Record<string, number> = { trunk: 9, primary: 9, secondary: 8, tertiary: 7, unclassified: 5.5, residential: 5.5, service: 4.5, living_street: 4.5, pedestrian: 4.5, footway: 3.5, path: 3.5 };
@@ -29,9 +29,11 @@ const K = 111320; // מטרים למעלה רוחב
 type VB = [number, number, number, number];
 
 /** מפת רחובות ב-SVG: הטלה שווה־מרחקים מקומית, זום בגלגלת, גרירה, ותוויות בלי חפיפה. */
-export default function StreetMap({ items, context = [], selected, onSelect, legend, label = 'מפת הרחובות', marks = [], ground: withGround = true, thin = 1, focus = null }: {
+export default function StreetMap({ items, context = [], selected, onSelect, legend, label = 'מפת הרחובות', marks = [], ground: withGround = true, thin = 1, focus = null, delayOf, drawDur = 1.1, replay = 0, overlay, marksDelay = 0 }: {
   items: MapItem[]; context?: Street[]; selected?: number | null; onSelect?: (code: number) => void; legend?: ReactNode; label?: string;
   marks?: MapMark[]; ground?: boolean; thin?: number; focus?: number | null;
+  /** תנועה עם משמעות: עיכוב בשניות לכל רחוב, למשל לפי הציון. replay משתנה = מציירים שוב. */
+  delayOf?: (code: number) => number; drawDur?: number; replay?: number; overlay?: ReactNode; marksDelay?: number;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
@@ -163,7 +165,7 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
         <g>{ctxPaths.map((p) => <path key={p.code} className="ctx" d={p.d} vectorEffect="non-scaling-stroke" />)}</g>
         <g>
           {paths.map(({ i, d }) => (
-            <path key={i.s.code} d={d} className="street-case" strokeWidth={widthOf(i.s) + (selected === i.s.code ? 6 : 2.4)} vectorEffect="non-scaling-stroke" opacity={selected && selected !== i.s.code ? 0.35 : 1} pointerEvents="none" />
+            <path key={i.s.code + '-' + replay} d={d} className={'street-case' + (delayOf ? ' draw' : '')} pathLength={delayOf ? 1 : undefined} style={delayOf ? { animationDelay: `${delayOf(i.s.code)}s`, animationDuration: `${drawDur}s` } : undefined} strokeWidth={widthOf(i.s) + (selected === i.s.code ? 6 : 2.4)} vectorEffect="non-scaling-stroke" opacity={selected && selected !== i.s.code ? 0.35 : 1} pointerEvents="none" />
           ))}
         </g>
         <g>
@@ -171,7 +173,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
             const on = selected === i.s.code;
             return (
               <path
-                key={i.s.code} d={d} className="street draw" pathLength={1}
+                key={i.s.code + '-' + replay} d={d} className="street draw" pathLength={1}
+                style={delayOf ? { animationDelay: `${delayOf(i.s.code)}s`, animationDuration: `${drawDur}s` } : undefined}
                 stroke={i.color} strokeWidth={widthOf(i.s) + (on ? 3 : 0)} vectorEffect="non-scaling-stroke"
                 opacity={selected && !on ? 0.45 : 1}
                 data-code={i.s.code}
@@ -190,7 +193,7 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
             </text>
           ))}
         </g>
-        {marks.length > 0 && <g className="marks">
+        {marks.length > 0 && <g className="marks fade-in" key={'m' + replay} style={{ animationDelay: `${marksDelay}s` }}>
           {(() => {
             // תוויות שטח בלי חפיפה: מה שמתנגש מוסתר עד שמגדילים
             const box: { x: number; y: number }[] = [];
@@ -204,7 +207,7 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
                 <text x={x} y={y} textAnchor="middle" className="m-t" style={{ fontSize: 15 * scale, strokeWidth: 5 * scale }}>{m.title}</text>
                 {m.value != null && <>
                   <rect x={x - 15 * scale} y={y + 5 * scale} width={30 * scale} height={19 * scale} fill={m.color} stroke="#fff" strokeWidth={1.5 * scale} />
-                  <text x={x} y={y + 19.5 * scale} textAnchor="middle" className="m-v" style={{ fontSize: 13.5 * scale, fill: (m.value ?? 0) > 82 ? '#fff' : '#1A1A18' }}>{m.value}</text>
+                  <text x={x} y={y + 19.5 * scale} textAnchor="middle" className="m-v" style={{ fontSize: 13.5 * scale, fill: m.ink ?? ((m.value ?? 0) > 82 ? '#fff' : '#1A1A18') }}>{m.value}</text>
                 </>}
               </g>
             );
@@ -224,6 +227,7 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
       })()}
       <svg className="north" width="22" height="30" viewBox="0 0 22 30" aria-label="צפון"><path d="M11 2 L18 22 L11 17 L4 22 Z" fill="#1A1A18" /><path d="M11 2 L4 22 L11 17 Z" fill="#fff" stroke="#1A1A18" strokeWidth="1" /><text x="11" y="29.5" textAnchor="middle" fontSize="8" fontWeight="600" fill="#1A1A18">צ</text></svg>
       {legend && <div className="legend">{legend}</div>}
+      {overlay}
     </div>
   );
 }
