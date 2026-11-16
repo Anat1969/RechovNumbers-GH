@@ -70,10 +70,10 @@ export default function App() {
   else if (route.page === 'cross') page = <Cross model={model} route={route} />;
   else if (route.page === 'actions') page = <Actions model={model} route={route} />;
   else if (route.page === 'method') page = <Method model={model} takenAt={data!.taken_at} source={data!.source} />;
-  else page = <Home model={model} />;
+  else page = <Home model={model} route={route} />;
 
   return (
-    <div className="shell" style={route.page === 'quarter' ? undefined : { gridTemplateRows: 'auto minmax(0,1fr)' }}>
+    <div className="shell">
       <TopBar route={route} model={model} menu={menu} status={status} />
       {page}
     </div>

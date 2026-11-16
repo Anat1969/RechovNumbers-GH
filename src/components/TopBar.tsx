@@ -33,7 +33,6 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
-  const lastQ = (() => { try { return localStorage.getItem('rn-last-q') || 'q-a'; } catch { return 'q-a'; } })();
 
   const hits = useMemo(() => {
     const t = q.trim();
@@ -48,11 +47,9 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
   }, []);
 
   const tabs: [string, string, Route['page'][]][] = [
-    ['העיר', '#/', ['home']],
-    ['השכונה', `#/q/${lastQ}`, ['quarter', 'street']],
+    ['מפה', '#/', ['home', 'quarter', 'street']],
     ['פעולות', '#/a', ['actions']],
-    ['ההצלבה', '#/x', ['cross']],
-    ['איך מודדים', '#/m', ['method']],
+    ['איך מודדים', '#/m', ['method', 'cross']],
   ];
 
   return (

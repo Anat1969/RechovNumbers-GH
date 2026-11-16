@@ -3,10 +3,12 @@ import type { Street } from '../lib/model';
 import { SUPABASE, ANON } from '../lib/data';
 
 export interface MapItem { s: Street; color: string; label?: boolean; tip: string; weight?: number }
+/** תווית שטח (רובע) במרכז הרחובות שלו: שם וציון, ולחיצה נכנסת אליו. */
+export interface MapMark { key: string; lon: number; lat: number; title: string; value?: number | null; color?: string; onClick?: () => void }
 
 /** רוחב הקו לפי סוג הדרך, בפיקסלים: עורק רחב, רחוב מגורים צר. */
 const WIDTH: Record<string, number> = { trunk: 9, primary: 9, secondary: 8, tertiary: 7, unclassified: 5.5, residential: 5.5, service: 4.5, living_street: 4.5, pedestrian: 4.5, footway: 3.5, path: 3.5 };
-const widthOf = (s: Street) => WIDTH[s.m.class ?? ''] ?? 5;
+const widthOf0 = (s: Street) => WIDTH[s.m.class ?? ''] ?? 5;
 
 /** רקע דמות־קרקע (Nolli): בניינים וגנים לשטח המפה, מ-rn_ground. נטען פעם אחת לכל שטח ונשמר בזיכרון. */
 type Ground = { b: number[][][]; p: number[][][] };
@@ -27,8 +29,9 @@ const K = 111320; // מטרים למעלה רוחב
 type VB = [number, number, number, number];
 
 /** מפת רחובות ב-SVG: הטלה שווה־מרחקים מקומית, זום בגלגלת, גרירה, ותוויות בלי חפיפה. */
-export default function StreetMap({ items, context = [], selected, onSelect, legend, label = 'מפת הרחובות' }: {
+export default function StreetMap({ items, context = [], selected, onSelect, legend, label = 'מפת הרחובות', marks = [], ground: withGround = true, thin = 1, focus = null }: {
   items: MapItem[]; context?: Street[]; selected?: number | null; onSelect?: (code: number) => void; legend?: ReactNode; label?: string;
+  marks?: MapMark[]; ground?: boolean; thin?: number; focus?: number | null;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
@@ -36,6 +39,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   const [tip, setTip] = useState<{ x: number; y: number; t: string } | null>(null);
   const drag = useRef<{ x: number; y: number; vb: VB; moved: boolean } | null>(null);
   const uid = useId().replace(/:/g, '');
+  // בקנה מידה של עיר הקווים דקים יותר, כדי שהרשת תיקרא ולא תיסתם
+  const widthOf = (s: Street) => widthOf0(s) * thin;
 
   const geo = useMemo(() => {
     const pts = items.flatMap((i) => (i.s.line ?? []).flat());
@@ -74,12 +79,22 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
 
   const fit = (): VB | null => {
     if (!geo) return null;
-    const pad = 0.08, w = geo.W * (1 + pad * 2), h = geo.H * (1 + pad * 2);
     const ar = size.w / size.h;
+    // מיקוד ברחוב אחד: המסגרת סביבו, לפחות 700 מ', כדי שהרחוב ייראה בתוך השכנים שלו
+    const f = focus != null ? items.find((i) => i.s.code === focus) : null;
+    const fp = f ? (f.s.line ?? []).flat().map(([lo, la]) => geo.P(lo, la)) : [];
+    if (fp.length) {
+      const xs = fp.map((p) => p[0]), ys = fp.map((p) => p[1]);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+      const w0 = Math.max(Math.max(...xs) - Math.min(...xs), 700) * 1.35, h0 = Math.max(Math.max(...ys) - Math.min(...ys), 700) * 1.35;
+      const [vw, vh] = w0 / h0 > ar ? [w0, w0 / ar] : [h0 * ar, h0];
+      return [cx - vw / 2, cy - vh / 2, vw, vh];
+    }
+    const pad = 0.08, w = geo.W * (1 + pad * 2), h = geo.H * (1 + pad * 2);
     const [vw, vh] = w / h > ar ? [w, w / ar] : [h * ar, h];
     return [geo.W / 2 - vw / 2, geo.H / 2 - vh / 2, vw, vh];
   };
-  useEffect(() => { setVb(fit()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [geo, size.w, size.h]);
+  useEffect(() => { setVb(fit()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [geo, size.w, size.h, focus]);
 
   const ctxPaths = useMemo(() => {
     if (!geo) return [];
@@ -91,22 +106,22 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
 
   const [ground, setGround] = useState<{ b: string; p: string } | null>(null);
   useEffect(() => {
-    if (!geo) return;
+    if (!geo || !withGround) return;
     const m = 0.003; let alive = true;
     loadGround([geo.minX - m, geo.minY - m, geo.maxX + m, geo.maxY + m]).then((g) => {
       if (!alive || !g) return;
       setGround({ b: (g.b ?? []).map(geo.ring).join(''), p: (g.p ?? []).map(geo.ring).join('') });
     });
     return () => { alive = false; };
-  }, [geo]);
+  }, [geo, withGround]);
 
   if (!geo || !vb) return <div className="map-wrap" ref={wrap}><div className="empty">אין לרחובות האלה קו על המפה.</div></div>;
 
   const scale = vb[2] / size.w; // יחידות מפה לפיקסל
   // תוויות: לפי סדר חשיבות, ומדלגים על מה שחופף לתווית שכבר הונחה
   const placed: { x: number; y: number; w: number }[] = [];
-  const labels = paths.filter((p) => p.i.label && p.mid && p.lp && p.lp.len / scale > p.i.s.name.length * 7.5 + 16).sort((a, b) => (b.i.weight ?? 0) - (a.i.weight ?? 0)).filter((p) => {
-    const [x, y] = p.mid!; const w = p.i.s.name.length * 7.5 * scale;
+  const labels = paths.filter((p) => p.i.label && p.mid && p.lp && p.lp.len / scale > p.i.s.name.length * 8 + 16).sort((a, b) => (b.i.weight ?? 0) - (a.i.weight ?? 0)).filter((p) => {
+    const [x, y] = p.mid!; const w = p.i.s.name.length * 8 * scale;
     const hit = placed.some((q) => Math.abs(q.x - x) < (q.w + w) / 2 + 6 * scale && Math.abs(q.y - y) < 18 * scale);
     if (!hit) placed.push({ x, y, w }); return !hit;
   });
@@ -170,11 +185,31 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
         <g>
           <defs>{labels.map((p) => <path key={p.i.s.code} id={`lp-${uid}-${p.i.s.code}`} d={p.lp!.d} />)}</defs>
           {labels.map((p) => (
-            <text key={p.i.s.code} className="lbl" style={{ fontSize: 12.5 * scale, strokeWidth: 3.6 * scale }} dy={-(widthOf(p.i.s) / 2 + 4) * scale}>
+            <text key={p.i.s.code} className="lbl" style={{ fontSize: 13.5 * scale, strokeWidth: 3.8 * scale }} dy={-(widthOf(p.i.s) / 2 + 4) * scale}>
               <textPath href={`#lp-${uid}-${p.i.s.code}`} startOffset="50%" textAnchor="middle">{p.i.s.name}</textPath>
             </text>
           ))}
         </g>
+        {marks.length > 0 && <g className="marks">
+          {(() => {
+            // תוויות שטח בלי חפיפה: מה שמתנגש מוסתר עד שמגדילים
+            const box: { x: number; y: number }[] = [];
+            return marks.map((m) => ({ m, p: geo.P(m.lon, m.lat) })).filter(({ p: [x, y] }) => {
+              const hit = box.some((b) => Math.abs(b.x - x) < 40 * scale && Math.abs(b.y - y) < 46 * scale);
+              if (!hit) box.push({ x, y }); return !hit;
+            });
+          })().map(({ m, p: [x, y] }) => {
+            return (
+              <g key={m.key} className="mark" onClick={() => { if (!drag.current?.moved) m.onClick?.(); }} role="link" aria-label={`${m.title}${m.value != null ? `, ממוצע ${m.value}` : ''}`}>
+                <text x={x} y={y} textAnchor="middle" className="m-t" style={{ fontSize: 15 * scale, strokeWidth: 5 * scale }}>{m.title}</text>
+                {m.value != null && <>
+                  <rect x={x - 15 * scale} y={y + 5 * scale} width={30 * scale} height={19 * scale} fill={m.color} stroke="#fff" strokeWidth={1.5 * scale} />
+                  <text x={x} y={y + 19.5 * scale} textAnchor="middle" className="m-v" style={{ fontSize: 13.5 * scale, fill: (m.value ?? 0) > 82 ? '#fff' : '#1A1A18' }}>{m.value}</text>
+                </>}
+              </g>
+            );
+          })}
+        </g>}
       </svg>
       {tip && <div className="map-tip" style={{ left: tip.x, top: tip.y }}>{tip.t}</div>}
       {(() => {

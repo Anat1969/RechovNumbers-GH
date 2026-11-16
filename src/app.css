@@ -365,3 +365,208 @@ h1.insight-line { font-size: clamp(20px, 2vw, 28px); margin: 0; line-height: 1.2
 @media (max-width: 720px) { .ind-line { grid-template-columns: minmax(0,1fr); } .crit-grid { grid-template-columns: minmax(0,1fr); } }
 .matrix td.chap, .matrix.wide td.chap { height: 4px; }
 .matrix.wide th.colh { height: 230px; }
+
+/* ===== אטלס: מפה גדולה משמאל, טור קריאה מימין (16.11.2026) =====
+   אותו מבנה בכל רמה: עיר, רובע, רחוב. הטור ביחס זהוב למפה (38:62). */
+body { font-size: 17px; line-height: 1.6; }
+.shell { grid-template-rows: auto minmax(0, 1fr); }
+.tab { font-size: 16px; padding: 17px 16px; }
+.brand { font-size: 18px; }
+.crumbs { font-size: 14px; }
+.label { font-size: 12px; }
+.src { font-size: 13.5px; line-height: 1.55; }
+.muted { font-size: inherit; }
+h1.insight-line { font-size: clamp(24px, 2.1vw, 34px); line-height: 1.3; }
+.explain { font-size: 16px; }
+.chip-t { font-size: 15.5px; padding: 6px 10px; }
+.btn { font-size: 15.5px; padding: 10px 18px; }
+.field { font-size: 15.5px; }
+.search input { width: clamp(140px, 16vw, 240px); padding: 8px 30px 8px 10px; }
+.results button { font-size: 15.5px; }
+.tone p { font-size: 16px; line-height: 1.65; }
+.tone h4 { font-size: 16.5px; }
+.panel-h h2 { font-size: 17px; }
+.legend { font-size: 13px; }
+.map-tip { font-size: 14px; }
+.lead { font-size: 16.5px; line-height: 1.6; margin: 0; }
+.mini-h { font-size: 18px; margin: 6px 0 0; }
+
+.atlas {
+  min-height: 0; overflow: hidden; width: 100%; max-width: 2000px; margin: 0 auto;
+  display: grid; gap: 14px 18px; padding: 14px 18px;
+  grid-template-columns: minmax(400px, 38fr) minmax(0, 62fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "head map" "body map";
+}
+.atlas > * { min-width: 0; min-height: 0; }
+.a-head { grid-area: head; display: grid; gap: 8px; align-content: start; }
+.a-map { grid-area: map; }
+.a-body { grid-area: body; overflow: hidden; }
+.a-pane { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px 20px; display: grid; gap: 14px; align-content: start; }
+.crumbs-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.q-sel { padding: 6px 10px; font-size: 15px; max-width: 60%; }
+
+/* ציון גדול והתפלגות: הגרפיקה לפני הטקסט */
+.a-kpi { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: end; }
+.badge { display: flex; align-items: center; gap: 12px; }
+.badge-n { font-family: var(--mono); font-weight: 600; font-size: 46px; line-height: 1; padding: 8px 14px; }
+.badge-s { font-size: 15px; color: var(--ink-soft); max-width: 22ch; line-height: 1.45; }
+.a-hist { display: grid; gap: 0; justify-items: start; }
+.hist.small { height: 58px; width: 100%; max-width: 230px; }
+.hist .hist-x { font-size: 12px; }
+.hist .hist-n { font-size: 12px; }
+.street-name { font-size: clamp(30px, 3vw, 44px) !important; font-weight: 600 !important; }
+.prev-next { display: flex; gap: 6px; justify-self: end; }
+.prev-next .btn { padding: 8px 12px; font-size: 14.5px; }
+
+/* לשוניות הטור: תובנות במרקר, מעשים בירוק. סימן אחד, משמעות אחת. */
+.a-tabs { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: none; flex: 0 0 auto; }
+.a-tabs::-webkit-scrollbar { display: none; }
+.a-tab { flex: 0 0 auto; border: 0; background: none; font: inherit; font-size: 16.5px; padding: 13px 14px 10px; color: var(--ink-soft); border-bottom: 3px solid transparent; cursor: pointer; text-decoration: none; transition: color .15s, transform .15s; }
+.a-tab:hover { color: var(--ink); transform: translateY(-1px); }
+.a-tab[aria-selected="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+.a-tab.k-ins::before, .a-tab.k-act::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-inline-end: 7px; vertical-align: 1px; }
+.a-tab.k-ins::before { background: var(--marker); box-shadow: inset 0 0 0 1px #E8C400; }
+.a-tab.k-act::before { background: var(--canopy); }
+.a-tab.k-ins[aria-selected="true"] { border-bottom-color: #E8C400; }
+.a-tab.k-act[aria-selected="true"] { border-bottom-color: var(--canopy); }
+.sub-nav { padding: 0; margin-bottom: 8px; }
+
+/* שלוש התשובות בטור: אחת מתחת לשנייה, עם פס צבע לפי משמעות */
+.a-pane .answers { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.answer { padding: 12px 16px; gap: 4px; border-inline-start: 5px solid var(--rule); }
+.answer.k-good { border-inline-start-color: var(--canopy); }
+.answer.k-bad { border-inline-start-color: var(--brick); }
+.answer.k-gap { border-inline-start-color: var(--amber); }
+.answer .q { font-size: 14.5px; }
+.answer .big { font-size: clamp(22px, 1.9vw, 30px); }
+.answer .sub { font-size: 15px; line-height: 1.5; }
+.answer[aria-pressed="true"] { outline-width: 2px; }
+.lines p { margin: 0 0 8px; font-size: 16px; line-height: 1.65; }
+.lines p:last-child { margin-bottom: 0; }
+
+/* מפה: בורר צבע בכותרת, תוויות רבעים */
+.a-map .panel-h { align-items: center; padding: 10px 14px; }
+.color-sel { display: flex; align-items: center; gap: 8px; }
+.color-sel .field { padding: 6px 10px; font-size: 15px; }
+.under { font-size: 15.5px; padding: 8px 14px 10px; }
+.map-wrap .mark text { font-family: var(--font); paint-order: stroke; stroke: #fff; stroke-linejoin: round; cursor: pointer; }
+.map-wrap .mark .m-t { font-weight: 600; fill: var(--ink); }
+.map-wrap .mark .m-v { font-family: var(--mono); font-weight: 700; }
+.map-wrap .mark:hover .m-t { fill: var(--measure); }
+.legend .ramp, .legend .ticks { width: 200px; }
+.legend .ticks { font-size: 11.5px; }
+
+/* רשימות וטבלאות בגודל קריא */
+.row { min-height: 44px; font-size: 16px; grid-template-columns: 28px minmax(0, 1fr) 80px 44px; }
+.row .i { font-size: 12.5px; }
+.score-pill { font-size: 15px; padding: 3px 4px; }
+.pick { padding: 12px 18px; gap: 8px; background: #FBFBF9; }
+.pick-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pick h3 { font-size: 21px; display: flex; gap: 10px; align-items: center; }
+.pick h3 .score-pill { min-width: 44px; }
+.fam { grid-template-columns: 120px minmax(0, 1fr) 36px; font-size: 15px; }
+.fam .v { font-size: 13.5px; }
+.fams { display: grid; gap: 8px; }
+.rel-row { grid-template-columns: 150px minmax(0, 1fr) 44px; font-size: 15.5px; min-height: 40px; }
+.rel-row[aria-pressed="true"], .prof-row[aria-pressed="true"] { background: #F1F0EC; box-shadow: inset -3px 0 0 var(--ink); }
+.prof-row { font-size: 15.5px; min-height: 46px; }
+.prof-row small { font-size: 12.5px; }
+.prof-h { font-size: 12px; }
+.cmp-row { font-size: 15px; }
+.cmp-h, .cmp-row { grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1fr); }
+.cmp-cell small { font-size: 12.5px; }
+.tier { border-top-width: 4px; padding-top: 6px; }
+.tier .mini-h { margin-top: 2px; }
+.tier-item { font-size: 15.5px; gap: 4px; padding: 10px 0; }
+.chip-s { font-size: 14px; padding: 4px 10px; }
+.street-chips { margin-top: 4px; }
+.ptable { font-size: 15px; }
+.ptable th { font-size: 12px; }
+.ptable td { padding: 8px; }
+.detail { font-size: 15px; gap: 6px; }
+.ind-row { font-size: 15px; min-height: 40px; grid-template-columns: 38px minmax(0, 1fr) 80px 50px; padding: 0; }
+.ind-row .pts { font-size: 13.5px; }
+.street-acts { gap: 10px; }
+.street-acts p { font-size: 16px; }
+.ai-box { padding: 12px 0 0; background: none; border: 0; }
+.tiles { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); overflow: visible; }
+.tile .t-name { font-size: 16px; }
+.tile .t-score { font-size: 24px; }
+.tile .t-sub { font-size: 13.5px; }
+.tile { min-height: 200px; }
+.flow-row .src-card { min-width: 0; flex: 1 1 120px; }
+.flow-row .src-card.measured { border-color: var(--measure); }
+.flow-row .src-card.measured .big { color: var(--measure); }
+.gaps { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.gap { font-size: 15px; padding: 8px 0; border-bottom: 1px solid var(--rule-soft); }
+.act-card { font-size: 15.5px; }
+.method dl { font-size: 15px; }
+.method .card h3 { font-size: 18px; }
+.crit-top { font-size: 16px; }
+.ind-pill { font-size: 15px; }
+.matrix { font-size: 13.5px; }
+.prose p { font-size: 16px; line-height: 1.7; }
+
+@media (max-width: 1100px) {
+  .atlas { grid-template-columns: minmax(360px, 42fr) minmax(0, 58fr); }
+}
+@media (max-width: 900px) {
+  .atlas { overflow: visible; grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "map" "body"; padding: 10px 12px; gap: 10px; }
+  .a-map { height: 56vh; }
+  .a-body { overflow: visible; }
+  .a-pane { overflow: visible; padding: 12px 14px 16px; }
+  .shell { height: auto; min-height: 100dvh; overflow: visible; }
+  .a-map .panel-h { flex-wrap: wrap; }
+}
+@media (max-width: 560px) {
+  .badge-n { font-size: 38px; }
+  .a-kpi { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .prev-next { justify-self: start; }
+  .rel-row { grid-template-columns: 112px minmax(0, 1fr) 40px; }
+  .fam { grid-template-columns: 96px minmax(0, 1fr) 34px; }
+  .cmp-h, .cmp-row { grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr); }
+  .tab { padding: 14px 9px; font-size: 15px; }
+  .a-tab { padding: 12px 10px 9px; font-size: 15.5px; }
+  .legend { max-width: 75%; }
+  .legend .ramp, .legend .ticks { width: 150px; }
+}
+.hist.small .hist-x { font-size: 24px; }
+.map-wrap .mark .m-v { stroke: none; paint-order: normal; }
+.map-wrap .mark rect { cursor: pointer; }
+@media (max-width: 560px) {
+  .legend .muted { display: none; }
+  .legend { padding: 4px 8px; gap: 2px; }
+  .search input { width: 120px; }
+}
+.a-pane .tiles { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.a-pane .tile { min-height: 0; height: 172px; padding: 8px 10px; }
+.a-pane .tile svg { min-height: 0; }
+.a-pane .tile .t-score { font-size: 20px; }
+.a-pane .tile .t-sub { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a-pane .tile { min-width: 0; overflow: hidden; }
+.a-pane .tile .t-sub { display: block; min-width: 0; }
+@media (max-width: 900px) {
+  .a-map { height: 44vh; }
+  .a-body { height: 64vh; overflow: hidden; }
+  .a-pane { overflow: auto; }
+  .a-kpi { gap: 4px 12px; }
+}
+@media (max-width: 560px) {
+  .a-kpi { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+  .badge-s { font-size: 13.5px; }
+  .hist.small { height: 44px; }
+  .a-hist .src { display: none; }
+  .prev-next { grid-column: 1 / -1; }
+}
+.a-pane .tile { height: auto; grid-template-rows: auto 118px auto; }
+.a-pane .tile .t-sub { white-space: normal; overflow: visible; line-height: 1.35; }
+.method-top { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.method-top .prose { max-width: none; }
+.gis-card { display: grid; gap: 10px; border-top: 4px solid var(--measure); }
+.gis-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 15px; }
+.gf { padding: 6px 10px; background: #F1F0EC; font-weight: 600; }
+.gf-src { background: var(--measure); color: #fff; }
+.gf-out { background: var(--canopy); color: #fff; }
+.gf-a { color: var(--ink-mute); }
+@media (max-width: 1000px) { .method-top { grid-template-columns: minmax(0, 1fr); } }
