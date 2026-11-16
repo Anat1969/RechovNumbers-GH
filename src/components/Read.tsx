@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { Model, Param } from '../lib/model';
 import { scoreColor, textOn } from '../lib/model';
 import { setParam } from '../lib/route';
+import Icon from './Icon';
 import Rich from './Rich';
 import { CountUp } from './Motion';
 
@@ -93,12 +94,14 @@ export function Ruler({ len }: { len: number }) {
   );
 }
 
+const TAB_ICON: Record<string, string> = { ins: 'bulb', act: 'tools', rank: 'list', num: 'chart', m: 'ruler', i360: 'target', guide: 'list' };
+
 /** לשוניות טור הקריאה. המצב נשמר בכתובת (t=), הלשונית הראשונה היא ברירת המחדל. */
 export function ReadTabs({ tabs, cur }: { tabs: readonly (readonly [string, string])[]; cur: string }) {
   return (
     <div className="a-tabs" role="tablist" aria-label="מה רואים בטור">
       {tabs.map(([k, l], i) => (
-        <button key={k} role="tab" className={`a-tab k-${k}`} aria-selected={cur === k} onClick={() => setParam('t', i === 0 ? null : k)}>{l}</button>
+        <button key={k} role="tab" className={`a-tab k-${k}`} aria-selected={cur === k} onClick={() => setParam('t', i === 0 ? null : k)}><Icon n={TAB_ICON[k] ?? 'list'} size={17} />{l}</button>
       ))}
     </div>
   );
@@ -135,8 +138,8 @@ export function Lines({ lines }: { lines: string[] }) {
 export function MethodNav({ cur }: { cur: 'm' | 'x' }) {
   return (
     <div className="a-tabs sub-nav" role="tablist" aria-label="איך מודדים">
-      <a role="tab" className="a-tab" aria-selected={cur === 'm'} href="#/m">השיטה והאמינות</a>
-      <a role="tab" className="a-tab" aria-selected={cur === 'x'} href="#/x">ההצלבה: עקרונות מול מדדים</a>
+      <a role="tab" className="a-tab" aria-selected={cur === 'm'} href="#/m"><Icon n="ruler" size={17} />השיטה והאמינות</a>
+      <a role="tab" className="a-tab" aria-selected={cur === 'x'} href="#/x"><Icon n="grid" size={17} />ההצלבה: עקרונות מול מדדים</a>
     </div>
   );
 }
@@ -151,8 +154,8 @@ export function GoogleLinks({ name, line }: { name: string; line: number[][][] |
   const m = midOf(line);
   return (
     <div className="g-links">
-      <a className="press btn" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name}, אשדוד`)}`} target="_blank" rel="noopener">בגוגל מפות</a>
-      {m && <a className="press btn" href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${m[1].toFixed(6)},${m[0].toFixed(6)}`} target="_blank" rel="noopener">מבט רחוב</a>}
+      <a className="press btn" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name}, אשדוד`)}`} target="_blank" rel="noopener"><Icon n="pin" />בגוגל מפות</a>
+      {m && <a className="press btn" href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${m[1].toFixed(6)},${m[0].toFixed(6)}`} target="_blank" rel="noopener"><Icon n="eye" />מבט רחוב</a>}
     </div>
   );
 }

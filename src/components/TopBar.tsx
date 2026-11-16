@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Model } from '../lib/model';
 import { QMAP } from '../data/quarters';
@@ -46,10 +47,10 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
     return () => document.removeEventListener('mousedown', out);
   }, []);
 
-  const tabs: [string, string, Route['page'][]][] = [
-    ['מפה', '#/', ['home', 'quarter', 'street']],
-    ['פעולות', '#/a', ['actions']],
-    ['איך מודדים', '#/m', ['method', 'cross']],
+  const tabs: [string, string, Route['page'][], string][] = [
+    ['מפה', '#/', ['home', 'quarter', 'street'], 'map'],
+    ['פעולות', '#/a', ['actions'], 'act'],
+    ['איך מודדים', '#/m', ['method', 'cross'], 'ruler'],
   ];
 
   return (
@@ -60,8 +61,8 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
           <span>רחוב טוב <b>במספרים</b></span>
         </a>
         <nav className="tabs" aria-label="ניווט">
-          {tabs.map(([label, href, pages]) => (
-            <button key={label} className="tab" aria-current={pages.includes(route.page) ? 'page' : undefined} onClick={() => go(href)}>{label}</button>
+          {tabs.map(([label, href, pages, ic]) => (
+            <button key={label} className="tab" aria-current={pages.includes(route.page) ? 'page' : undefined} onClick={() => go(href)}><Icon n={ic} size={17} />{label}</button>
           ))}
         </nav>
         <div className="top-right">

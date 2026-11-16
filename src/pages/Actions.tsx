@@ -5,9 +5,10 @@ import { QMAP, QUARTERS } from '../data/quarters';
 import { ACTIONS, BASIS, TIERS, type Tier } from '../lib/actions';
 import { actionPlan, quarterRanks } from '../lib/story';
 import { go, setParam, type Route } from '../lib/route';
+import Icon from '../components/Icon';
 import Rich from '../components/Rich';
 import StreetMap, { type MapMark } from '../components/StreetMap';
-import { centerOf } from '../components/Sketch';
+import { centerOf, GroupSketch } from '../components/Sketch';
 import { ReadTabs } from '../components/Read';
 
 const TABS = [['act', 'מעשים'], ['guide', 'הנחיות לתכנון חדש']] as const;
@@ -40,6 +41,15 @@ export default function Actions({ model, route }: { model: Model; route: Route }
     try { await navigator.clipboard.writeText(`הנחיות רחוב לתכנון חדש (רחוב טוב במספרים)\n${guidelines}`); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* אין הרשאת לוח */ }
   };
   const top = plan[0];
+  const view = route.q.get('v') === 'grid' ? 'grid' : 'map';
+  // מסגרות הרבעים: כל רובע עם הרחובות שצריכים את הפעולה, מהרובע שצריך הכי הרבה
+  const frames = useMemo(() => {
+    if (!pick) return [];
+    const all = summarize(model, null);
+    const needAll = new Set(actionPlan(model, all.streets).find((r) => r.p.key === pick.p.key)?.streets.map((x) => x.s.code) ?? []);
+    return ranks.map((r) => ({ ...r, n: r.sum.streets.filter((x) => needAll.has(x.s.code)).length, hl: new Set(r.sum.streets.filter((x) => needAll.has(x.s.code)).map((x) => x.s.code)) }))
+      .sort((a, b) => b.n / b.sum.streets.length - a.n / a.sum.streets.length);
+  }, [model, ranks, pick]);
 
   return (
     <main className="atlas">
@@ -58,9 +68,23 @@ export default function Actions({ model, route }: { model: Model; route: Route }
       <section className="a-map panel" aria-label="איפה צריך את הפעולה">
         <div className="panel-h">
           <h2>{pick ? `איפה צריך ${pick.p.label}: ${pick.streets.length} רחובות` : 'אין פעולה נדרשת'}</h2>
-          {pick && <span className="src">{TIERS[pick.tier].title} · {pick.who}</span>}
+          <div className="view-sw" role="group" aria-label="תצוגת המפה">
+            <button className="press btn" aria-pressed={view === 'map'} onClick={() => setParam('v', null)}><Icon n="map" />מפה</button>
+            <button className="press btn" aria-pressed={view === 'grid'} onClick={() => setParam('v', 'grid')}><Icon n="grid" />רבעים</button>
+          </div>
         </div>
-        <StreetMap
+        {view === 'grid' ? (
+          <div className="q-frames">
+            {frames.map((f) => (
+              <button key={f.id} className={'q-frame press' + (qid === f.id ? ' sel' : '')} onClick={() => { setParam('v', null); setParam('q', f.id); }} aria-label={`${f.name}: ${f.n} רחובות צריכים ${pick?.p.label ?? ''}`}>
+                <span className="qf-top"><span className="qf-name">{f.name}</span><span className="qf-n" style={{ background: f.n ? RED : '#fff', color: f.n ? '#fff' : 'var(--ink)' }}>{f.n}</span></span>
+                <GroupSketch streets={f.sum.streets} hl={f.hl} label={`איפה ב${f.name}`} />
+                <span className="qf-sub">{`${Math.round((f.n / f.sum.streets.length) * 100)}% מ-${f.sum.streets.length} הרחובות`}</span>
+              </button>
+            ))}
+            <p className="src q-frames-note">מהרובע שבו החלק הגדול ביותר מהרחובות צריך את הפעולה. לחיצה על רובע פותחת אותו במפה.</p>
+          </div>
+        ) : <StreetMap
           key={qid ?? 'city'} items={items} ground={!!qid} thin={qid ? 1 : 0.55} marks={marks}
           context={qid ? model.streets.filter((x) => x.s.quarter_id !== qid).map((x) => x.s) : []}
           onSelect={(code) => go(`#/s/${code}?t=act`)} label={`איפה צריך ${pick?.p.label ?? ''}`}
@@ -69,7 +93,7 @@ export default function Actions({ model, route }: { model: Model; route: Route }
             <span><i className="key-sw" style={{ background: GREY }} /> עומד ביעד או קרוב אליו</span>
             {!qid && <span className="muted">המספר ליד הרובע: כמה רחובות בו צריכים את הפעולה. לחיצה מתמקדת ברובע.</span>}
           </>}
-        />
+        />}
       </section>
 
       <div className="a-body panel">
@@ -116,7 +140,7 @@ export default function Actions({ model, route }: { model: Model; route: Route }
           {tab === 'guide' && <>
             <div className="pick-h">
               <h2 className="mini-h">הנחיות רחוב לתכנון חדש</h2>
-              <button className="press btn" onClick={copy}>{copied ? 'הועתק' : 'העתקת ההנחיות'}</button>
+              <button className="press btn" onClick={copy}><Icon n="copy" />{copied ? 'הועתק' : 'העתקת ההנחיות'}</button>
             </div>
             <p className="src">מה לדרוש מכל תב"ע, תוכנית בינוי ותוכנית התחדשות. כולל את מה שעוד לא נמדד.</p>
             <ul className="guides">

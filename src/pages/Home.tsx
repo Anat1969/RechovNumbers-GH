@@ -7,6 +7,7 @@ import { fmtVal } from '../lib/insight';
 import { actionPlan, cityStory, streetStory } from '../lib/story';
 import { CAN, GAPS, TIERS, type Tier } from '../lib/actions';
 import { go, setParam, type Route } from '../lib/route';
+import Icon from '../components/Icon';
 import Rich from '../components/Rich';
 import { MiniMap } from '../components/MiniMap';
 import StreetMap, { type MapMark } from '../components/StreetMap';
@@ -59,24 +60,32 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
   // התנועה: הרחובות נמתחים מהחזק לחלש. הכיתוב מראה את סף הציון יורד, ובסוף את התמונה המלאה.
   const SPAN = 3.4, DUR = 0.9;
   const [replay, setReplay] = useState(0);
-  const order = cs.city.streets; // כבר ממוין מהגבוה לנמוך
+  // הסדר הוא המידע: לפי הציון הכולל, או לפי הפרמטר שנבחר. כל בחירה מתחילה את הסרטון מחדש.
+  const valOf = (x: Scored) => (colorBy ? (x.scores[colorBy.key] == null ? null : Math.round(x.scores[colorBy.key]! * 100)) : x.total);
+  const order = useMemo(() => [...cs.city.streets].sort((a, b) => (valOf(b) ?? -1) - (valOf(a) ?? -1)), [cs, colorBy]); // eslint-disable-line react-hooks/exhaustive-deps
   const rankIdx = useMemo(() => Object.fromEntries(order.map((x, i) => [x.s.code, i])), [order]);
   const delayOf = (code: number) => ((rankIdx[code] ?? order.length) / order.length) * SPAN;
-  const sweep = useSweep(SPAN + DUR, replay);
+  const playKey = `${colorBy?.key ?? 'total'}-${replay}`;
+  const sweep = useSweep(SPAN + DUR, playKey);
   const shownN = Math.min(order.length, Math.round((sweep * (SPAN + DUR)) / SPAN * order.length));
-  const floor = shownN ? order[Math.min(order.length - 1, shownN - 1)].total : null;
+  const cur = shownN ? order[Math.min(order.length - 1, shownN - 1)] : null;
+  const floor = cur ? valOf(cur) : null;
+  const meet = colorBy ? order.filter((x) => (valOf(x) ?? 0) >= 99).length : 0;
+  const doneLine = colorBy
+    ? `${colorBy.label}: ${Math.round((meet / order.length) * 100)}% מהרחובות ביעד`
+    : cs.edge.weak ? `${Math.round(cs.edge.weakOut / cs.edge.weak * 100)}% מהחלשים: תעשייה, נמל וצירים` : `כל ${order.length} הרחובות`;
   const overlay = (
     <div className={"sweep" + (sweep >= 1 ? " done" : "")} aria-live="off">
       {sweep < 1 ? (
         <>
-          <span className="sweep-l">נמתחים מהחזק לחלש</span>
-          <span className="sweep-v"><span className="sweep-sw" style={{ background: scoreColor(floor) }} />ציון <bdi className="num">{floor ?? '—'}</bdi> ומעלה · <bdi className="num">{shownN}</bdi> רחובות</span>
+          <span className="sweep-l">{colorBy ? `${colorBy.label}: נמתחים מהחזק לחלש` : 'נמתחים מהחזק לחלש'}</span>
+          <span className="sweep-v"><span className="sweep-sw" style={{ background: scoreColor(floor) }} />{colorBy && cur ? <>עד <bdi className="val">{fmtVal(colorBy, cur)}</bdi></> : <>ציון <bdi className="num">{floor ?? '—'}</bdi> ומעלה</>} · <bdi className="num">{shownN}</bdi> רחובות</span>
           <span className="sweep-bar"><i style={{ width: `${sweep * 100}%` }} /></span>
         </>
       ) : (
         <>
-          <span className="sweep-l">{cs.edge.weak ? `${Math.round(cs.edge.weakOut / cs.edge.weak * 100)}% מהחלשים: תעשייה, נמל וצירים` : `כל ${order.length} הרחובות`}</span>
-          <button className="press btn sweep-btn" onClick={() => setReplay((r) => r + 1)}>הפעלה מחדש</button>
+          <span className="sweep-l">{doneLine}</span>
+          <button className="press btn sweep-btn" onClick={() => setReplay((r) => r + 1)}><Icon n="replay" />הפעלה מחדש</button>
         </>
       )}
     </div>
@@ -100,7 +109,7 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
         </div>
         <StreetMap
           items={items} ground={false} thin={0.55} marks={marks} label="מפת הרחובות של אשדוד"
-          delayOf={colorBy ? undefined : delayOf} drawDur={DUR} replay={replay} overlay={colorBy ? undefined : overlay} marksDelay={colorBy ? 0 : SPAN + DUR}
+          delayOf={delayOf} drawDur={DUR} replay={playKey} overlay={overlay} marksDelay={SPAN + DUR}
           onSelect={(code) => { const x = model.byCode[code]; if (x?.s.quarter_id) go(`#/q/${x.s.quarter_id}?s=${code}`); }}
           legend={<Legend title={colorBy ? `${colorBy.label}: ציון מול היעד` : 'ציון רחוב, 0 עד 100'} note="המספר ליד שם הרובע: הממוצע שלו. לחיצה נכנסת לרובע." />}
         />
@@ -158,7 +167,7 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
                 </div>
               );
             })}
-            <button className="press btn" onClick={() => go('#/a')}>תוכנית הפעולה המלאה, לפי רובע</button>
+            <button className="press btn" onClick={() => go('#/a')}><Icon n="act" />תוכנית הפעולה המלאה, לפי רובע</button>
           </>}
 
 

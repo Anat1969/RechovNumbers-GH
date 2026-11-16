@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Street } from '../lib/model';
 import { SUPABASE, ANON } from '../lib/data';
+import Icon from './Icon';
 
 export interface MapItem { s: Street; color: string; label?: boolean; tip: string; weight?: number }
 /** תווית שטח (רובע) במרכז הרחובות שלו: שם וציון, ולחיצה נכנסת אליו. */
@@ -33,7 +34,7 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   items: MapItem[]; context?: Street[]; selected?: number | null; onSelect?: (code: number) => void; legend?: ReactNode; label?: string;
   marks?: MapMark[]; ground?: boolean; thin?: number; focus?: number | null;
   /** תנועה עם משמעות: עיכוב בשניות לכל רחוב, למשל לפי הציון. replay משתנה = מציירים שוב. */
-  delayOf?: (code: number) => number; drawDur?: number; replay?: number; overlay?: ReactNode; marksDelay?: number;
+  delayOf?: (code: number) => number; drawDur?: number; replay?: number | string; overlay?: ReactNode; marksDelay?: number;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
@@ -159,10 +160,10 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   return (
     <div className={'map-wrap' + (sat ? ' is-sat' : '')} ref={wrap}>
       <div className="map-tools">
-        <button className="press sat-btn" aria-pressed={sat} onClick={toggleSat} title="תצלום אוויר מתחת לרחובות">לוויין</button>
-        <button className="press" aria-label="הגדלה" onClick={() => zoom(0.7)}>+</button>
-        <button className="press" aria-label="הקטנה" onClick={() => zoom(1.4)}>−</button>
-        <button className="press" aria-label="איפוס המפה" onClick={() => setVb(fit())} style={{ fontSize: 11 }}>⤢</button>
+        <button className="press sat-btn" aria-pressed={sat} onClick={toggleSat} title="תצלום אוויר מתחת לרחובות"><Icon n="sat" size={16} />לוויין</button>
+        <button className="press" aria-label="הגדלה" onClick={() => zoom(0.7)}><Icon n="plus" size={16} /></button>
+        <button className="press" aria-label="הקטנה" onClick={() => zoom(1.4)}><Icon n="minus" size={16} /></button>
+        <button className="press" aria-label="איפוס המפה" onClick={() => setVb(fit())}><Icon n="fit" size={16} /></button>
       </div>
       <svg
         className="map-svg" viewBox={vb.join(' ')} role="img" aria-label={label}

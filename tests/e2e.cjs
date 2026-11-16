@@ -59,6 +59,9 @@ async function mock(p) {
     ok(await p.locator('.compare .cmp-row').count() >= 6, 'בית, מספרים: השוואת שני רחובות');
     await p.locator('.prof-row').first().click();
     ok(p.url().includes('c=') && (await p.locator('.a-map h2').innerText()).includes('בכל רחוב'), 'בית: לחיצה על פרמטר צובעת את מפת העיר');
+    ok(await p.locator('.sweep:not(.done)').isVisible(), 'בית: בחירת צבע מתחילה את הסרטון מחדש, לפי הפרמטר');
+    await p.waitForSelector('.sweep.done', { timeout: 8000 });
+    ok((await p.locator('.sweep.done').innerText()).includes('ביעד'), 'בית: בסוף הסרטון של פרמטר, כמה רחובות ביעד');
     await p.getByRole('tab', { name: 'תובנות' }).click();
     ok(await p.locator('.tile').count() >= 10, 'בית: אריח לכל רובע בלשונית תובנות');
     ok(await p.locator('.answer.has-art .art svg path').count() > 50, 'בית: ציור לכל תשובה');
@@ -162,6 +165,10 @@ async function mock(p) {
     ok(await p.locator('.a-map .map-wrap path.street').count() > 300 && await p.locator('.map-wrap .mark').count() >= 10, 'פעולות: מפת העיר עם מספר הרחובות שצריכים את הפעולה בכל רובע');
     await p.locator('.act-card .act-top').nth(1).click();
     ok(p.url().includes('p=') && await p.locator('.act-card.on').count() === 1, 'פעולות: בחירת פעולה מציירת אותה במפה');
+    await p.getByRole('button', { name: 'רבעים' }).click();
+    ok(p.url().includes('v=grid') && await p.locator('.q-frame').count() >= 10, 'פעולות: מסגרות הרבעים במקום המפה');
+    await p.locator('.q-frame').first().click();
+    ok(p.url().includes('q=') && !p.url().includes('v=grid') && await p.locator('.a-map .map-wrap').count() === 1, 'פעולות: לחיצה על מסגרת בוחרת רובע וחוזרת למפה');
     await p.getByLabel('בחירת רובע לתוכנית').selectOption('q-a');
     ok(p.url().includes('q=q-a'), 'פעולות: סינון לפי רובע נשמר בכתובת');
     await p.getByRole('tab', { name: 'הנחיות לתכנון חדש' }).click();
@@ -177,6 +184,9 @@ async function mock(p) {
     await p.waitForSelector('.atlas .answers');
     ok(p.url().endsWith('#/') || !p.url().includes('#/'), 'שם האפליקציה מוביל לבית');
 
+    const gray = await p.evaluate(() => [...document.querySelectorAll('.btn:not([aria-pressed="true"])')].every((x) => getComputedStyle(x).backgroundColor !== 'rgb(255, 255, 255)' && getComputedStyle(x).borderTopWidth === '0px'));
+    ok(gray, 'כפתורים: רקע אפור בלי קו מסגרת');
+    ok(await p.locator('.topbar .tab .ico').count() === 3, 'אייקון לכל חדר בסרגל');
     const radius = await p.evaluate(() => [...document.querySelectorAll('main button, .topbar .tab, .field')].every((x) => getComputedStyle(x).borderRadius === '0px'));
     ok(radius, 'כל הכפתורים מרובעים');
 

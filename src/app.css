@@ -658,3 +658,50 @@ h1.insight-line { font-size: clamp(24px, 2.1vw, 34px); line-height: 1.3; }
 .g-links .btn { text-decoration: none; text-align: center; white-space: nowrap; }
 .pick-acts { display: flex; flex-wrap: wrap; gap: 6px; }
 .street-kpi .prev-next { flex-wrap: wrap; }
+
+/* ===== כפתורים נבדלים: רקע אפור, בלי קו מסגרת (בקשת ענת, 16.11.2026) =====
+   כל מה שלוחצים עליו יושב על רקע אפור. הצורה נקראת מהרקע ומהצל, לא מקו. */
+:root { --btn: #ECEBE6; --btn-hover: #E2E0DA; --card-btn: #F6F5F1; }
+.press { border: 0; background: var(--btn); color: var(--ink); box-shadow: 0 1px 0 rgba(26,26,24,.10), 0 1px 3px rgba(26,26,24,.08); }
+.press:hover { background: var(--btn-hover); }
+.press[aria-pressed="true"], .press.is-on { background: var(--ink); color: #fff; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-weight: 500; }
+.ico { flex: 0 0 auto; display: inline-block; vertical-align: -3px; }
+/* כפתורים שהם כרטיסים (תשובה, רובע, רחוב בגלריה): רקע אפור בהיר, כדי שהציור ייקרא */
+.answer.press, .tile.press, .g-cell.press { background: var(--card-btn); }
+.answer.press:hover, .tile.press:hover, .g-cell.press:hover { background: #EFEEE9; }
+.answer[aria-pressed="true"] { background: #fff; color: var(--ink); }
+.g-cell[aria-pressed="true"] { background: #fff; }
+.answer .art, .street-shape, .tier-item .art { background: #fff; }
+/* כלי המפה */
+.map-tools button { display: grid; place-items: center; background: rgba(236,235,230,.96); }
+.map-tools .sat-btn { display: flex; gap: 5px; align-items: center; }
+/* לשוניות: אפור כשלא נבחרות, לבן עם קו כשנבחרות */
+.a-tabs { gap: 4px; padding: 8px 10px 0; background: #FAFAF8; }
+.a-tab { background: var(--btn); display: inline-flex; align-items: center; gap: 7px; border-bottom-width: 3px; }
+.a-tab:hover { background: var(--btn-hover); }
+.a-tab[aria-selected="true"] { background: #fff; box-shadow: 0 -1px 0 var(--rule) inset; }
+.a-tab.k-ins::before, .a-tab.k-act::before { content: none; }
+.a-tab.k-ins .ico { color: #B58F00; }
+.a-tab.k-act .ico { color: var(--canopy); }
+.tab { display: inline-flex; align-items: center; gap: 7px; }
+/* בחירה: רשימות נפתחות ושדות */
+.field { background: var(--btn); border: 0; box-shadow: 0 1px 0 rgba(26,26,24,.10); }
+.search input.field { background: #F3F2EE; }
+.link-btn { background: none; box-shadow: none; }
+.chip-s { background: var(--btn); }
+.g-links .btn, .prev-next .btn { gap: 6px; }
+.view-sw { display: flex; gap: 4px; }
+.view-sw .btn { padding: 6px 12px; font-size: 14.5px; }
+.q-frames { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; padding: 10px 14px 14px; align-content: start; }
+.q-frame { display: grid; grid-template-rows: auto 150px auto; gap: 4px; padding: 8px 10px; text-align: start; background: var(--card-btn); }
+.q-frame.sel { outline: 2px solid var(--ink); outline-offset: -2px; background: #fff; }
+.q-frame .sketch { background: #fff; }
+.qf-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.qf-name { font-weight: 600; font-size: 15.5px; }
+.qf-n { font-family: var(--mono); font-weight: 700; font-size: 14px; padding: 1px 8px; }
+.qf-sub { font-size: 13px; color: var(--ink-soft); }
+.q-frames-note { grid-column: 1 / -1; margin: 0; }
+.map-tools { direction: ltr; justify-items: start; }
+.sweep-v .val { font-family: var(--mono); font-weight: 600; }
+@media (max-width: 560px) { .topbar .tab .ico { display: none; } }

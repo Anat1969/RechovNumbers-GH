@@ -7,6 +7,7 @@ import { answers, distillPayload, fmtVal, underMap } from '../lib/insight';
 import { distill, type Distilled } from '../lib/data';
 import { go, setParam, type Route } from '../lib/route';
 import StreetMap from '../components/StreetMap';
+import Icon from '../components/Icon';
 import Rich from '../components/Rich';
 import { actionPlan, quarterRanks, quarterStory } from '../lib/story';
 import { TIERS, type Tier } from '../lib/actions';
@@ -106,7 +107,7 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
               );
             })}
             <div className="pick-acts">
-              <button className="press btn" onClick={() => go(`#/s/${picked.s.code}`)}>כל המדידות של הרחוב</button>
+              <button className="press btn" onClick={() => go(`#/s/${picked.s.code}`)}><Icon n="ruler" />כל המדידות של הרחוב</button>
               <GoogleLinks name={picked.s.name} line={picked.s.line} />
             </div>
           </div>
@@ -125,7 +126,7 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
             </>}
             <h3 className="mini-h">מה המספרים אומרים</h3>
             <Lines lines={story.lines} />
-            {ai.state === 'idle' && sum.streets.length > 0 && <button className="press btn" onClick={runAi}>אבחון מזוקק</button>}
+            {ai.state === 'idle' && sum.streets.length > 0 && <button className="press btn" onClick={runAi}><Icon n="spark" />אבחון מזוקק</button>}
             {ai.state !== 'idle' && (
               <div className="ai-box" aria-live="polite">
                 <div className="pick-h">
@@ -165,7 +166,7 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
                 </div>
               );
             }) : <p className="muted">אין ברובע פרמטר מתחת למחצית היעד.</p>}
-            <button className="press btn" onClick={() => go(`#/a?q=${qid}`)}>תוכנית הפעולה של {q.name}</button>
+            <button className="press btn" onClick={() => go(`#/a?q=${qid}`)}><Icon n="act" />תוכנית הפעולה של {q.name}</button>
           </>}
 
           {tab === 'rank' && <div className="rank" role="list">

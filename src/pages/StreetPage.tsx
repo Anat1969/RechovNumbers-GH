@@ -9,6 +9,7 @@ import { QMAP } from '../data/quarters';
 import { fmtVal } from '../lib/insight';
 import { go, type Route } from '../lib/route';
 import StreetMap from '../components/StreetMap';
+import Icon from '../components/Icon';
 import Rich from '../components/Rich';
 import { streetStory } from '../lib/story';
 import { TIERS } from '../lib/actions';
@@ -52,8 +53,8 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
           <div className="prev-next">
             <GoogleLinks name={x.s.name} line={x.s.line} />
             {sum && <>
-            <button className="press btn" disabled={!prev} onClick={() => prev && go(`#/s/${prev.s.code}?t=${tab}`)} title={prev?.s.name}>הקודם בדירוג</button>
-            <button className="press btn" disabled={!next} onClick={() => next && go(`#/s/${next.s.code}?t=${tab}`)} title={next?.s.name}>הבא בדירוג</button>
+            <button className="press btn" disabled={!prev} onClick={() => prev && go(`#/s/${prev.s.code}?t=${tab}`)} title={prev?.s.name}><Icon n="prev" />הקודם בדירוג</button>
+            <button className="press btn" disabled={!next} onClick={() => next && go(`#/s/${next.s.code}?t=${tab}`)} title={next?.s.name}>הבא בדירוג<Icon n="next" /></button>
             </>}
           </div>
         </div>
