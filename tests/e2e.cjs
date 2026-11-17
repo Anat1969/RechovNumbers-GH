@@ -124,6 +124,17 @@ async function mock(p) {
     ok(await p.locator('.sat-tiles image').count() >= 4 && await p.locator('.sat-credit').isVisible(), 'מפה: לוויין מתחת לרחובות, עם קרדיט');
     await p.locator('.sat-btn').click();
     ok(await p.locator('.sat-tiles image').count() === 0, 'מפה: חזרה מהלוויין');
+    await p.getByRole('tab', { name: 'שטח' }).click();
+    await p.waitForSelector('.fc-row');
+    await p.waitForSelector('.sat-tiles image', { state: 'attached' });
+    ok(await p.locator('.fc-row').count() >= 4 && await p.locator('.sat-tiles image').count() >= 4, 'מצב שטח: רשימת בדיקה לכל מדידה, והמפה עוברת ללוויין');
+    await p.locator('.fc-row').first().getByRole('button', { name: 'לא נכון' }).click();
+    await p.locator('.fc-note').first().fill('יש מעבר חצייה בצומת');
+    ok(await p.locator('.fc-row.m-no').count() === 1 && await p.getByRole('button', { name: 'העתקת דוח השטח' }).isEnabled(), 'מצב שטח: סימון, הערה ודוח להעתקה');
+    await p.reload({ waitUntil: 'networkidle' });
+    await p.waitForSelector('.fc-row');
+    ok(await p.locator('.fc-row.m-no').count() === 1 && (await p.locator('.fc-note').first().inputValue()).includes('מעבר'), 'מצב שטח: הבדיקה נשמרת אחרי רענון');
+    await p.getByRole('tab', { name: 'תובנות' }).click();
     ok(await p.locator('.fam').count() === 5, 'דף רחוב: חמש המשפחות בלשונית תובנות');
     ok(await p.locator('svg.ruler').isVisible() && await p.locator('svg.strip circle').count() > 3 && await p.locator('.street-shape svg path').count() >= 1, 'דף רחוב: סרגל, פס דירוג מול הרובע וצורת הרחוב');
     await p.getByRole('tab', { name: 'מדידות' }).click();
@@ -199,7 +210,7 @@ async function mock(p) {
       const m = await b.newPage({ viewport: vp, reducedMotion: 'reduce' });
       await mock(m);
       m.on('pageerror', (e) => errors.push(e.message));
-      for (const h of ['', '#/?t=num', '#/?t=act', '#/?t=story', '#/q/q-a', '#/q/q-a?t=act', '#/s/161', '#/s/161?t=m', '#/a', '#/x', '#/m']) {
+      for (const h of ['', '#/?t=num', '#/?t=act', '#/?t=story', '#/q/q-a', '#/q/q-a?t=act', '#/s/161', '#/s/161?t=m', '#/s/161?t=field', '#/a', '#/x', '#/m']) {
         await m.goto(BASE + h, { waitUntil: 'networkidle' });
         await m.waitForTimeout(500);
         const hs = await m.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);

@@ -30,9 +30,9 @@ const K = 111320; // מטרים למעלה רוחב
 type VB = [number, number, number, number];
 
 /** מפת רחובות ב-SVG: הטלה שווה־מרחקים מקומית, זום בגלגלת, גרירה, ותוויות בלי חפיפה. */
-export default function StreetMap({ items, context = [], selected, onSelect, legend, label = 'מפת הרחובות', marks = [], ground: withGround = true, thin = 1, focus = null, delayOf, drawDur = 1.1, replay = 0, overlay, marksDelay = 0 }: {
+export default function StreetMap({ items, context = [], selected, onSelect, legend, label = 'מפת הרחובות', marks = [], ground: withGround = true, thin = 1, focus = null, satOn = false, delayOf, drawDur = 1.1, replay = 0, overlay, marksDelay = 0 }: {
   items: MapItem[]; context?: Street[]; selected?: number | null; onSelect?: (code: number) => void; legend?: ReactNode; label?: string;
-  marks?: MapMark[]; ground?: boolean; thin?: number; focus?: number | null;
+  marks?: MapMark[]; ground?: boolean; thin?: number; focus?: number | null; satOn?: boolean;
   /** תנועה עם משמעות: עיכוב בשניות לכל רחוב, למשל לפי הציון. replay משתנה = מציירים שוב. */
   delayOf?: (code: number) => number; drawDur?: number; replay?: number | string; overlay?: ReactNode; marksDelay?: number;
 }) {
@@ -111,6 +111,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   const [ground, setGround] = useState<{ b: string; p: string } | null>(null);
   // תצלום אוויר: מה שבאמת יש ברחוב, מתחת לקווי הציון. נזכר בין דפים.
   const [sat, setSat] = useState(() => { try { return localStorage.getItem('rn-sat') === '1'; } catch { return false; } });
+  // מצב שטח: הלוויין נדלק לבד, בלי לשנות את הבחירה השמורה
+  useEffect(() => { if (satOn) setSat(true); }, [satOn]);
   const toggleSat = () => setSat((v) => { try { localStorage.setItem('rn-sat', v ? '0' : '1'); } catch { /* פרטי */ } return !v; });
   useEffect(() => {
     if (!geo || !withGround) return;

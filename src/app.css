@@ -705,3 +705,30 @@ h1.insight-line { font-size: clamp(24px, 2.1vw, 34px); line-height: 1.3; }
 .map-tools { direction: ltr; justify-items: start; }
 .sweep-v .val { font-family: var(--mono); font-weight: 600; }
 @media (max-width: 560px) { .topbar .tab .ico { display: none; } }
+
+/* ===== מצב שטח (17.11.2026): כל מדידה מול המציאות ===== */
+.field-check { display: grid; gap: 10px; }
+.fc-head { display: grid; gap: 6px; }
+.fc-head p { margin: 0; }
+.fc-progress { display: grid; gap: 4px; }
+.fc-progress .bar { height: 8px; }
+.bad-t { color: var(--brick); }
+.fc-row { display: grid; gap: 6px; padding: 10px 12px; background: #FBFBF9; border-inline-start: 4px solid var(--rule); }
+.fc-row.m-ok { border-inline-start-color: var(--canopy); }
+.fc-row.m-no { border-inline-start-color: var(--brick); background: #FBF4F3; }
+.fc-row.m-unsure { border-inline-start-color: #E8C400; }
+.fc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 16px; }
+.fc-top .score-pill { min-width: 40px; }
+.fc-val { font-size: 15px; color: var(--ink-soft); }
+.fc-val .val { font-family: var(--mono); font-weight: 600; color: var(--ink); }
+.fc-marks { display: flex; gap: 6px; flex-wrap: wrap; }
+.fc-marks .btn { padding: 6px 14px; font-size: 14.5px; }
+.fc-marks .mk-ok[aria-pressed="true"] { background: var(--canopy); }
+.fc-marks .mk-no[aria-pressed="true"] { background: var(--brick); }
+.fc-marks .mk-unsure[aria-pressed="true"] { background: #B58F00; }
+.fc-note { width: 100%; padding: 8px 10px; }
+.fc-foot { display: grid; gap: 4px; justify-items: start; padding-top: 4px; }
+.fc-intro { margin: 0; }
+.fc-val .val { font-family: inherit; font-weight: 600; }
+.a-tabs { gap: 3px; padding-inline: 8px; }
+.a-tab { padding: 12px 11px 9px; gap: 6px; }

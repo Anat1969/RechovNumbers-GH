@@ -94,7 +94,7 @@ export function Ruler({ len }: { len: number }) {
   );
 }
 
-const TAB_ICON: Record<string, string> = { ins: 'bulb', act: 'tools', rank: 'list', num: 'chart', m: 'ruler', i360: 'target', guide: 'list' };
+const TAB_ICON: Record<string, string> = { ins: 'bulb', act: 'tools', rank: 'list', num: 'chart', m: 'ruler', i360: 'target', guide: 'list', field: 'eye' };
 
 /** לשוניות טור הקריאה. המצב נשמר בכתובת (t=), הלשונית הראשונה היא ברירת המחדל. */
 export function ReadTabs({ tabs, cur }: { tabs: readonly (readonly [string, string])[]; cur: string }) {

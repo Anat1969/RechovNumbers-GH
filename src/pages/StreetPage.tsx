@@ -10,11 +10,12 @@ import { fmtVal } from '../lib/insight';
 import { go, type Route } from '../lib/route';
 import StreetMap from '../components/StreetMap';
 import Icon from '../components/Icon';
+import FieldCheck from '../components/FieldCheck';
 import Rich from '../components/Rich';
 import { streetStory } from '../lib/story';
 import { TIERS } from '../lib/actions';
 
-const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['m', 'מדידות'], ['i360', 'שכונה 360']] as const;
+const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['field', 'שטח'], ['m', 'מדידות'], ['i360', 'שכונה 360']] as const;
 const STATUS_HE: Record<string, string> = { planning: 'בתכנון', approved: 'מאושרת', permit: 'בהיתר', construction: 'בביצוע', completed: 'הושלמה' };
 
 export default function StreetPage({ model, route }: { model: Model; route: Route }) {
@@ -65,7 +66,7 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
         <StreetMap
           items={(sum?.streets ?? [x]).map((y) => ({ s: y.s, color: y.s.code === x.s.code ? scoreColor(x.total) : scoreColor(y.total), label: true, weight: y.s.code === x.s.code ? 99 : 0, tip: `${y.s.name}: ${y.total}` }))}
           context={model.streets.filter((y) => y.s.quarter_id !== x.s.quarter_id).map((y) => y.s)}
-          selected={x.s.code} focus={x.s.code} onSelect={(c) => go(`#/s/${c}?t=${tab}`)} label={`${x.s.name} ברובע`}
+          selected={x.s.code} focus={x.s.code} satOn={tab === 'field'} onSelect={(c) => go(`#/s/${c}?t=${tab}`)} label={`${x.s.name} ברובע`}
           legend={<Legend title="ציון רחוב, 0 עד 100" note="הרחוב מודגש, שאר הרובע מעומעם" />}
         />
       </section>
@@ -148,6 +149,8 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
               </div>
             ) : <p className="src">לחיצה על שורה: איך חושב, על מה נשען ומה המגבלה.</p>}
           </>}
+
+          {tab === 'field' && <FieldCheck model={model} x={x} place={q?.name ?? 'בלי רובע'} />}
 
           {tab === 'i360' && <>
             {touched.map((ind) => {

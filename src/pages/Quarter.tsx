@@ -108,6 +108,7 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
             })}
             <div className="pick-acts">
               <button className="press btn" onClick={() => go(`#/s/${picked.s.code}`)}><Icon n="ruler" />כל המדידות של הרחוב</button>
+              <button className="press btn" onClick={() => go(`#/s/${picked.s.code}?t=field`)}><Icon n="eye" />בדיקת שטח</button>
               <GoogleLinks name={picked.s.name} line={picked.s.line} />
             </div>
           </div>
