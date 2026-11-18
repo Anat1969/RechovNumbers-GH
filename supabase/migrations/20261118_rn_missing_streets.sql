@@ -1,9 +1,10 @@
 -- רחוב טוב במספרים, 18.11.2026: רחובות שנשמטו (למשל רוגוזין).
 -- 1. רחוב בלי גאומטריה ב-cl_streets, או עם קטע קצר מ-40 מ', מקבל גאומטריה מדרכי OSM לפי שם מנורמל (rn_nn).
 -- 2. רחוב שאין לו גאומטריה גם אחרי זה נשמר ב-rn_street_metrics עם סיבה (geo = nogeometry / short), ולא נעלם.
--- 3. התאמת שם לדרכי OSM (סוג דרך, צמתים) נעשית לפי שם מנורמל: שד' / שדרות, גרשיים, מקפים.
+-- 3. התאמת שם לדרכי OSM (סוג דרך, צמתים) נעשית לפי שם מנורמל: שד' / שדרות, גרשיים, מקפים, ו"ה" הידיעה (דוכיפת / הדוכיפת).
+-- 4. כשיש מיקום רשמי, קו OSM מתקבל רק אם הוא עד 250 מ' ממנו (אחרת רחוב אחר באותו שם: "השקמה").
 create or replace function public.rn_nn(t text) returns text language sql immutable set search_path = public as $$
-  select regexp_replace(regexp_replace(regexp_replace(coalesce(t,''), '[''"״׳`’־\-\.,]', ' ', 'g'), '^(שד|שדרות|דרך|רח|רחוב)\s+', ''), '\s+', '', 'g')
+  select regexp_replace(regexp_replace(regexp_replace(regexp_replace(coalesce(t,''), '[''"״׳`’־\-\.,]', ' ', 'g'), '^(שד|שדרות|דרך|רח|רחוב)\s+', ''), '(^|\s)ה', '\1', 'g'), '\s+', '', 'g')
 $$;
 
 -- (גרסה 18.11.2026) רחוב טוב במספרים: חישוב המדדים לכל רחוב באשדוד (ASHDODMAP, cbhexpybdggwzyakgagd).
@@ -46,7 +47,8 @@ begin
   update _rn_st st set g = nm.g, gsrc = 'osm'
   from _rn_nm nm where nm.code = st.code
     and (st.g is null or ST_IsEmpty(st.g) or ST_Length(st.g) < 40)
-    and ST_Length(nm.g) > coalesce(ST_Length(st.g), 0);
+    and ST_Length(nm.g) > coalesce(ST_Length(st.g), 0)
+    and (st.g is null or ST_IsEmpty(st.g) or ST_DWithin(st.g, nm.g, 250));
 
   -- רחוב שנשאר בלי קו ראוי: נשמר עם סיבה
   drop table if exists _rn_skip;
