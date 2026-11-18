@@ -7,6 +7,7 @@ import { fmtVal } from '../lib/insight';
 import { actionPlan, cityStory, streetStory } from '../lib/story';
 import { CAN, GAPS, TIERS, type Tier } from '../lib/actions';
 import { go, setParam, type Route } from '../lib/route';
+import { QUARTERS } from '../data/quarters';
 import Icon from '../components/Icon';
 import Rich from '../components/Rich';
 import { MiniMap } from '../components/MiniMap';
@@ -35,6 +36,7 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
   const cs = useMemo(() => cityStory(model), [model]);
   const plan = useMemo(() => actionPlan(model, cs.city.streets), [model, cs]);
   const tab = TABS.find(([k]) => k === route.q.get('t'))?.[0] ?? 'ins';
+  const view = route.q.get('v') === 'grid' ? 'grid' : 'map';
   const colorKey = route.q.get('c');
   const colorBy = colorKey && PMAP[colorKey] && model.entering.includes(PMAP[colorKey]) ? PMAP[colorKey] : null;
   const cross = crossTotals();
@@ -105,14 +107,39 @@ export default function Home({ model, route }: { model: Model; route: Route }) {
       <section className="a-map panel" aria-label="מפת העיר">
         <div className="panel-h">
           <h2>{colorBy ? `${colorBy.label} בכל רחוב בעיר` : 'הציון של כל רחוב בעיר'}</h2>
-          <ColorSelect model={model} colorBy={colorBy} />
+          <div className="panel-tools">
+            <div className="view-sw" role="group" aria-label="תצוגת המפה">
+              <button className="press btn" aria-pressed={view === 'map'} onClick={() => setParam('v', null)}><Icon n="map" />מפה</button>
+              <button className="press btn" aria-pressed={view === 'grid'} onClick={() => setParam('v', 'grid')}><Icon n="grid" />רבעים</button>
+            </div>
+            <select className="field q-sel" value="" onChange={(e) => e.target.value && go(`#/q/${e.target.value}`)} aria-label="בחירת רובע">
+              <option value="">בחירת רובע</option>
+              {QUARTERS.filter((q) => q.kind === 'quarter').map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
+            </select>
+            <ColorSelect model={model} colorBy={colorBy} />
+          </div>
         </div>
-        <StreetMap
+        {view === 'grid' ? (
+          <div className="q-frames sq">
+            {cs.ranks.map(({ id, name, sum }) => {
+              const vals = colorBy ? sum.streets.map((x) => x.scores[colorBy.key]).filter((z): z is number => z != null) : [];
+              const v = colorBy ? (vals.length ? Math.round((vals.reduce((p, z) => p + z, 0) / vals.length) * 100) : null) : sum.avg;
+              return (
+                <button key={id} className="q-frame press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ${colorBy ? colorBy.label : 'ממוצע'} ${v}`}>
+                  <span className="qf-top"><span className="qf-name">{name}</span><span className="qf-n" style={{ background: scoreColor(v), color: v != null && (v < 18 || v > 82) ? '#fff' : '#1A1A18' }}>{v}</span></span>
+                  <GroupSketch streets={sum.streets} by={colorBy?.key} label={`מפת ${name}`} />
+                  <span className="qf-sub">{`${sum.streets.length} רחובות`}</span>
+                </button>
+              );
+            })}
+            <p className="src q-frames-note">כל רובע מצויר במסגרת משלו. המספר: הממוצע של הרובע. לחיצה פותחת את הרובע.</p>
+          </div>
+        ) : <StreetMap
           items={items} ground={false} thin={0.55} marks={marks} label="מפת הרחובות של אשדוד"
           delayOf={delayOf} drawDur={DUR} replay={playKey} overlay={overlay} marksDelay={SPAN + DUR}
           onSelect={(code) => { const x = model.byCode[code]; if (x?.s.quarter_id) go(`#/q/${x.s.quarter_id}?s=${code}`); }}
           legend={<Legend title={colorBy ? `${colorBy.label}: ציון מול היעד` : 'ציון רחוב, 0 עד 100'} note="המספר ליד שם הרובע: הממוצע שלו. לחיצה נכנסת לרובע." />}
-        />
+        />}
       </section>
 
       <div className="a-body panel">

@@ -38,29 +38,29 @@ export default function Intro({ model }: { model: Model }) {
           <button className="press btn" onClick={() => go('#/a')}><Icon n="act" />תוכנית פעולה</button>
           <button className="press btn" onClick={() => go('#/m')}><Icon n="ruler" />איך מודדים</button>
         </div>
+        <div className="facts" aria-label="שלוש תובנות">
+          <div className="fact">
+            <span className="fact-n" style={{ color: scoreColor(cs.city.avg) }}>{cs.city.avg}</span>
+            <p>הציון הממוצע של רחוב, מתוך 100.</p>
+            <span className="src">{`${n} רחובות מדורגים, מתוך ${total} ברשימת העירייה.`}</span>
+          </div>
+          {weak && (
+            <div className="fact">
+              <span className="fact-n" style={{ color: scoreColor(weak.meet) }}>{weak.meet}%</span>
+              <Rich as="p">{`מהרחובות ביעד ב**${weak.p.label}**.`}</Rich>
+              <span className="src">זה החסר הגדול של העיר.</span>
+            </div>
+          )}
+          {top && low && gap != null && (
+            <div className="fact">
+              <span className="fact-n">{gap}</span>
+              <p>נקודות פער בין הרובע המוביל לחלש.</p>
+              <span className="src">{`${top.name} (${top.sum.avg}) מול ${low.name} (${low.sum.avg}).`}</span>
+            </div>
+          )}
+        </div>
       </section>
 
-      <section className="facts" aria-label="שלוש תובנות">
-        <div className="fact">
-          <span className="fact-n" style={{ color: scoreColor(cs.city.avg) }}>{cs.city.avg}</span>
-          <p>הציון הממוצע של רחוב, מתוך 100.</p>
-          <span className="src">{`${n} רחובות מדורגים, מתוך ${total} ברשימת העירייה.`}</span>
-        </div>
-        {weak && (
-          <div className="fact">
-            <span className="fact-n" style={{ color: scoreColor(weak.meet) }}>{weak.meet}%</span>
-            <Rich as="p">{`מהרחובות ביעד ב**${weak.p.label}**.`}</Rich>
-            <span className="src">זה החסר הגדול של העיר.</span>
-          </div>
-        )}
-        {top && low && gap != null && (
-          <div className="fact">
-            <span className="fact-n">{gap}</span>
-            <p>נקודות פער בין הרובע המוביל לחלש.</p>
-            <span className="src">{`${top.name} (${top.sum.avg}) מול ${low.name} (${low.sum.avg}).`}</span>
-          </div>
-        )}
-      </section>
     </main>
   );
 }
