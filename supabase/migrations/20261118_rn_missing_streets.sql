@@ -31,7 +31,8 @@ begin
     ST_Transform(ST_SetSRID(ST_Collect(ARRAY(
       select ST_MakeLine(ARRAY(select ST_MakePoint((pt->>1)::float, (pt->>0)::float) from jsonb_array_elements(ln) pt))
       from jsonb_array_elements(s.lines) ln where jsonb_array_length(ln) >= 2)),4326),2039) g,
-    q.quarter_id, case when q.quarter_id is not null then 'municipal' end as qsrc, null::text as flag, null::text as gsrc
+    q.quarter_id, case when q.quarter_id is not null then 'municipal' end as qsrc, null::text as flag, null::text as gsrc,
+    rn_nn(s.name) as nk1, rn_nn(coalesce(s.osm_name,'~')) as nk2
   from cl_streets s left join rn_street_quarter q on q.code = s.code
   where s.kind = 'street';
 
@@ -39,7 +40,7 @@ begin
   drop table if exists _rn_nm;
   create temp table _rn_nm as
   select st.code, ST_Collect(o.g) g
-  from _rn_st st join _rn_o o on o.kind = 'road' and o.k in (rn_nn(st.name), rn_nn(coalesce(st.osm_name,'~')))
+  from _rn_st st join _rn_o o on o.kind = 'road' and (o.k = st.nk1 or o.k = st.nk2)
     and o.tags->>'highway' in ('primary','secondary','tertiary','residential','living_street','unclassified','pedestrian','trunk','primary_link','secondary_link','tertiary_link','service','footway','path')
   where o.k <> '' group by st.code;
   update _rn_st st set g = nm.g, gsrc = 'osm'
@@ -136,7 +137,7 @@ begin
       select ST_ClusterDBSCAN(pt, 25, 1) over () cid from (
         select (ST_Dump(ST_Intersection(ST_Buffer(st.g, 4), r.g))).geom pt from _rn_o r
         where r.kind='road' and ST_DWithin(r.g, st.g, 4)
-          and coalesce(r.k,'~') not in (rn_nn(st.name), rn_nn(coalesce(st.osm_name,'~')))
+          and coalesce(r.k,'~') not in (st.nk1, st.nk2)
           and r.tags->>'highway' in ('primary','secondary','tertiary','residential','living_street','unclassified','pedestrian','trunk','primary_link','secondary_link','tertiary_link')
       ) x) y) jn on true
   left join lateral (select count(*) c, round(avg((o.tags->>'building:levels')::numeric) filter (where o.tags->>'building:levels' ~ '^[0-9]+(\.[0-9]+)?$'),1) lv,
@@ -159,7 +160,7 @@ begin
         max((substring(r.tags->>'lanes' from '^[0-9]+'))::int) lanes,
         bool_or(r.tags ? 'cycleway' or r.tags ? 'cycleway:both' or r.tags ? 'cycleway:right' or r.tags ? 'cycleway:left') or exists(select 1 from _rn_o c where c.kind='road' and c.tags->>'highway'='cycleway' and ST_DWithin(c.g, st.g, 15) and ST_Length(ST_Intersection(c.g, ST_Buffer(st.g,15))) > 0.3*ST_Length(st.g)) cyc,
         exists(select 1 from _rn_o f where f.kind='road' and f.tags->>'highway'='footway' and f.tags->>'footway'='sidewalk' and ST_DWithin(f.g, st.g, 15)) or bool_or(r.tags->>'sidewalk' in ('both','left','right','yes')) sw
-      from _rn_o r where r.kind='road' and r.k in (rn_nn(st.name), rn_nn(coalesce(st.osm_name,'~'))) and ST_DWithin(r.g, st.g, 10)) rd on true
+      from _rn_o r where r.kind='road' and r.k in (st.nk1, st.nk2) and ST_DWithin(r.g, st.g, 10)) rd on true
   left join lateral (select jsonb_build_object('id', p.id, 'title', p.title, 'status', p.status, 'number', p.plan_number, 'points', p.pts,
         'street', jsonb_build_object('a13', p.metrics->'13'->'score', 'a14', p.metrics->'14'->'score', 'b01', p.metrics->'16'->'score', 'b14', p.metrics->'29'->'score', 'b15', p.metrics->'30'->'score')) j
       from _rn_plan p where p.g is not null and ST_DWithin(p.g, st.g, 30) order by p.pts desc nulls last limit 1) pl on true
