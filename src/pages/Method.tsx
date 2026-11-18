@@ -21,10 +21,6 @@ export default function Method({ model, takenAt, source }: { model: Model; taken
 
       <div className="method-top">
       <section className="prose card">
-        <figure className="film">
-          <video controls preload="none" playsInline poster="demo-poster.jpg" src="demo.mp4" aria-label="סרטון: רחוב טוב במספרים, מדידה שהופכת למעשה" />
-          <figcaption><b>מדידה שהופכת למעשה.</b> שבעים ושמונה שניות על החזון: ציון לכל רחוב, הצלבה של שכבות, ותוכנית פעולה.</figcaption>
-        </figure>
         <h2 className="section-title" style={{ marginTop: 0 }}>על מה הכלי נשען</h2>
         <Rich as="p">{'**שכונה 360°**: 44 מדדים לתכנון שכונה בת־קיימא, 120 נקודות, כפי שהם באפליקציה "שכונה 360: שער היעדים". המשקל של כל מדד בציון הרחוב הוא הניקוד שלו בחוברת.'}</Rich>
         <Rich as="p">{'**הרחובות הטובים: זיקוק הקריטריונים** (מינהל התכנון, 2026): 12 קריטריונים בארבע משפחות, ועוד 3 שאלות מקומיות של אשדוד, כפי שהם באפליקציה "רחובות טובים באשדוד". מהם נלקחו היעדים המספריים: בלוק עד 125 מ\' ו-3 עד 5 בניינים ל-100 מ\'.'}</Rich>
