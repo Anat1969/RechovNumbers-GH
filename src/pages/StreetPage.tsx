@@ -51,7 +51,7 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
             <div className="score-big" style={{ background: scoreColor(x.total), color: textOn(x.total) }}>{x.total ?? '—'}</div>
             <Rich as="div" className="src">{`**${Math.round(x.points * 10) / 10}** מתוך **${model.maxPoints}** נקודות`}</Rich>
           </div>
-          {sum && <div style={{ display: 'grid', gap: 4 }}>
+          {sum && x.total != null && <div style={{ display: 'grid', gap: 4 }}>
             <Rich as="span" className="src">{`מקום **${rank}** מתוך **${sum.streets.length}**`}</Rich>
             <button className="press btn" disabled={!prev} onClick={() => prev && go(`#/s/${prev.s.code}`)} title={prev?.s.name}>הקודם בדירוג</button>
             <button className="press btn" disabled={!next} onClick={() => next && go(`#/s/${next.s.code}`)} title={next?.s.name}>הבא בדירוג</button>
