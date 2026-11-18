@@ -44,7 +44,7 @@ export default function StreetPage({ model, route }: { model: Model; route: Rout
     <main className="atlas">
       <header className="a-head">
         <p className="crumbs">
-          <a href="#/">אשדוד</a> / {q ? <a href={`#/q/${q.id}?s=${x.s.code}`}>{q.name}</a> : 'בלי רובע'} / {x.s.name}
+          <a href="#/city">אשדוד</a> / {q ? <a href={`#/q/${q.id}?s=${x.s.code}`}>{q.name}</a> : 'בלי רובע'} / {x.s.name}
           {x.s.quarter_source === 'location' && <span className="muted"> · שיוך לרובע לפי מיקום</span>}
         </p>
         <h1 className="insight-line street-name">{x.s.name}</h1>

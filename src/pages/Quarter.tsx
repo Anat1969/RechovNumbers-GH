@@ -60,7 +60,7 @@ export default function Quarter({ model, route }: { model: Model; route: Route }
     <main className="atlas">
       <header className="a-head">
         <div className="crumbs-row">
-          <p className="crumbs"><a href="#/">אשדוד</a> / {q.name}</p>
+          <p className="crumbs"><a href="#/city">אשדוד</a> / {q.name}</p>
           <select className="field q-sel" value={qid} onChange={(e) => go(`#/q/${e.target.value}`)} aria-label="בחירת רובע">
             <optgroup label="רבעים">{shown.filter((x) => x.kind === 'quarter').map((x) => <option key={x.id} value={x.id}>{x.name} ({counts[x.id]})</option>)}</optgroup>
             <optgroup label="אזורים">{shown.filter((x) => x.kind === 'area').map((x) => <option key={x.id} value={x.id}>{x.name} ({counts[x.id]})</option>)}</optgroup>
