@@ -48,7 +48,8 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
   }, []);
 
   const tabs: [string, string, Route['page'][], string][] = [
-    ['מפה', '#/', ['home', 'quarter', 'street'], 'map'],
+    ['פתיחה', '#/', ['intro'], 'bulb'],
+    ['מפה', '#/city', ['home', 'quarter', 'street'], 'map'],
     ['פעולות', '#/a', ['actions'], 'act'],
     ['איך מודדים', '#/m', ['method', 'cross'], 'ruler'],
   ];

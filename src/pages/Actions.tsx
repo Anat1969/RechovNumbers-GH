@@ -55,7 +55,7 @@ export default function Actions({ model, route }: { model: Model; route: Route }
     <main className="atlas">
       <header className="a-head">
         <div className="crumbs-row">
-          <p className="crumbs"><a href="#/">אשדוד</a> / תוכנית פעולה{qid ? ` / ${place}` : ''}</p>
+          <p className="crumbs"><a href="#/city">אשדוד</a> / תוכנית פעולה{qid ? ` / ${place}` : ''}</p>
           <select className="field q-sel" value={qid ?? ''} onChange={(e) => setParam('q', e.target.value || null)} aria-label="בחירת רובע לתוכנית">
             <option value="">כל העיר</option>
             {QUARTERS.filter((q) => q.kind === 'quarter').map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
