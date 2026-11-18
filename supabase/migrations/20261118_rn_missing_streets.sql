@@ -43,7 +43,7 @@ begin
   select st.code, ST_Collect(o.g) g
   from _rn_st st join _rn_o o on o.kind = 'road' and (o.k = st.nk1 or o.k = st.nk2)
     and o.tags->>'highway' in ('primary','secondary','tertiary','residential','living_street','unclassified','pedestrian','trunk','primary_link','secondary_link','tertiary_link','service','footway','path')
-  where o.k <> '' group by st.code;
+  where o.k <> '' and (st.g is null or ST_IsEmpty(st.g) or ST_DWithin(o.g, st.g, 250)) group by st.code;
   update _rn_st st set g = nm.g, gsrc = 'osm'
   from _rn_nm nm where nm.code = st.code
     and (st.g is null or ST_IsEmpty(st.g) or ST_Length(st.g) < 40)
