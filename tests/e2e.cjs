@@ -31,7 +31,7 @@ async function mock(p) {
     let distillCalls = 0;
     p.on('request', (r) => { if (r.url().includes('rn-distill') && r.method() === 'POST') distillCalls++; });
 
-    await p.goto(BASE, { waitUntil: 'networkidle' });
+    await p.goto(BASE + '#/city', { waitUntil: 'networkidle' });
     await p.waitForSelector('.atlas .map-wrap path.street');
     ok((await p.locator('h1').innerText()).includes('אשדוד'), 'בית: שורת התובנה של העיר');
     const box = async (sel) => p.locator(sel).first().boundingBox();
@@ -192,12 +192,12 @@ async function mock(p) {
     ok(await p.locator('.gaps-table tbody tr').count() >= 8, 'שיטה: טבלת מה חסר ומאיפה');
 
     await p.locator('.brand').click();
-    await p.waitForSelector('.atlas .answers');
+    await p.waitForFunction(() => ['', '#/'].includes(location.hash)); await p.waitForSelector('main');
     ok(p.url().endsWith('#/') || !p.url().includes('#/'), 'שם האפליקציה מוביל לבית');
 
     const gray = await p.evaluate(() => [...document.querySelectorAll('.btn:not([aria-pressed="true"])')].every((x) => getComputedStyle(x).backgroundColor !== 'rgb(255, 255, 255)' && getComputedStyle(x).borderTopWidth === '0px'));
     ok(gray, 'כפתורים: רקע אפור בלי קו מסגרת');
-    ok(await p.locator('.topbar .tab .ico').count() === 3, 'אייקון לכל חדר בסרגל');
+    ok(await p.locator('.topbar .tab .ico').count() === await p.locator('.topbar .tab').count(), 'אייקון לכל חדר בסרגל');
     const radius = await p.evaluate(() => [...document.querySelectorAll('main button, .topbar .tab, .field')].every((x) => getComputedStyle(x).borderRadius === '0px'));
     ok(radius, 'כל הכפתורים מרובעים');
 
@@ -210,7 +210,7 @@ async function mock(p) {
       const m = await b.newPage({ viewport: vp, reducedMotion: 'reduce' });
       await mock(m);
       m.on('pageerror', (e) => errors.push(e.message));
-      for (const h of ['', '#/?t=num', '#/?t=act', '#/?t=story', '#/q/q-a', '#/q/q-a?t=act', '#/s/161', '#/s/161?t=m', '#/s/161?t=field', '#/a', '#/x', '#/m']) {
+      for (const h of ['', '#/city', '#/city?t=num', '#/city?t=act', '#/city?t=story', '#/q/q-a', '#/q/q-a?t=act', '#/s/161', '#/s/161?t=m', '#/s/161?t=field', '#/a', '#/x', '#/m']) {
         await m.goto(BASE + h, { waitUntil: 'networkidle' });
         await m.waitForTimeout(500);
         const hs = await m.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
