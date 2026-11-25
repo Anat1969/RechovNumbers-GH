@@ -765,3 +765,24 @@ h1.insight-line { font-size: clamp(24px, 2.1vw, 34px); line-height: 1.3; }
 .panel-tools .q-sel { max-width: none; }
 .q-frames.sq { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .q-frames.sq .q-frame { grid-template-rows: auto minmax(0, 1fr) auto; aspect-ratio: 1 / 1; }
+
+/* נייד: הכותרת של לוח המפה נשברת לשלוש שורות, ו-44vh השאירו למפה כ-170 פיקסלים, עם כיתוב, מקרא וזום זה על זה (25.11.2026).
+   המפה מקבלת גובה משלה, ושורת הסיום של התנועה עולה למעלה, בין הזום לחץ הצפון, הרחק מהמקרא ומקנה המידה. */
+@media (max-width: 560px) {
+  .a-map { height: auto; display: flex; flex-direction: column; }
+  .a-map .map-wrap { flex: none; height: max(360px, 62vh); }
+  .sweep.done { top: 8px; bottom: auto; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 132px); grid-auto-flow: row; justify-items: center; gap: 4px; }
+  .sweep.done .sweep-l { font-size: 12.5px; text-align: center; }
+  .sweep.done .sweep-btn { padding: 4px 10px; font-size: 13px; }
+  .sweep { max-width: calc(100% - 132px); }
+}
+@media (max-width: 560px) {
+  .sweep-l, .sweep-v { white-space: nowrap; }
+  .sweep-l { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .sweep-v { font-size: 13.5px; }
+  .sweep.done .sweep-l { white-space: normal; }
+}
+@media (max-width: 380px) {
+  .legend .ramp, .legend .ticks { width: 112px; }
+  .legend { font-size: 11.5px; }
+}
