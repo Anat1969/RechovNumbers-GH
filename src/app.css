@@ -365,3 +365,53 @@ h1.insight-line { font-size: clamp(20px, 2vw, 28px); margin: 0; line-height: 1.2
 @media (max-width: 720px) { .ind-line { grid-template-columns: minmax(0,1fr); } .crit-grid { grid-template-columns: minmax(0,1fr); } }
 .matrix td.chap, .matrix.wide td.chap { height: 4px; }
 .matrix.wide th.colh { height: 230px; }
+
+/* תוכנית העבודה: מפת עבודה רובע מול נושא, תרחיש השפעה, שלבים והחלטות */
+.wp-steps { display: grid; gap: 6px; margin: 6px 0 8px; }
+.wp-step { display: grid; grid-template-columns: 92px minmax(0,1fr) 34px; grid-template-areas: "l bar v" ". b b"; align-items: center; column-gap: 8px; }
+.wp-step-l { grid-area: l; font-size: 13px; }
+.wp-step-bar { grid-area: bar; height: 14px; background: var(--rule-soft); position: relative; }
+.wp-step-bar i { position: absolute; inset-block: 0; inset-inline-start: 0; transition: width .8s ease-out; }
+.wp-step-v { grid-area: v; font-size: 16px; }
+.wp-step-b { grid-area: b; }
+.wp-pilot-n { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 22px; margin: 6px 0; }
+.wp-pilot-n .link-btn { font-size: 22px; font-weight: 600; }
+.wp-mx-wrap { overflow-x: auto; max-width: 100%; margin-top: 6px; }
+.wp-mx { border-collapse: separate; border-spacing: 2px; font-size: 12px; min-width: 100%; }
+.wp-mx th button { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; padding: 6px 4px; min-height: 44px; width: 100%; text-align: inherit; }
+.wp-mx th button:hover, .wp-mx th button[aria-pressed="true"] { color: var(--measure); font-weight: 600; }
+.wp-th { font-weight: 500; vertical-align: bottom; text-align: center; border-bottom: 4px solid; line-height: 1.25; min-width: 56px; }
+.wp-th.tier-now { border-bottom-color: var(--brick); } .wp-th.tier-think { border-bottom-color: #E8C400; } .wp-th.tier-plan { border-bottom-color: var(--canopy); }
+.wp-rh { text-align: start; white-space: nowrap; font-weight: 500; position: sticky; right: 0; background: #fff; z-index: 1; }
+.wp-mx td { text-align: center; font-family: var(--mono); font-weight: 600; height: 30px; min-width: 40px; }
+.wp-mx tr.hl td { box-shadow: 0 -2px 0 var(--ink) inset, 0 2px 0 var(--ink) inset; }
+.wp-key { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+.wp-key i { display: inline-block; width: 14px; height: 4px; margin-inline-end: 6px; vertical-align: middle; }
+.wp-key i.tier-now { background: var(--brick); } .wp-key i.tier-think { background: #E8C400; } .wp-key i.tier-plan { background: var(--canopy); }
+.wp-order { margin: 6px 0; padding-inline-start: 20px; display: grid; gap: 4px; font-size: 14px; }
+.wp-dec { margin: 8px 0 0; padding-inline-start: 22px; display: grid; gap: 10px; font-size: 15px; }
+.wp-levels { margin-top: 12px; display: grid; gap: 4px; font-size: 13px; }
+.wp-levels p { margin: 0; }
+.wp-levels .label { display: inline-block; min-width: 52px; color: var(--ink); }
+.wp .band { margin-top: 14px; }
+@media (max-width: 720px) {
+  .wp .band-grid.two, .wp .band-grid.three { grid-template-columns: minmax(0,1fr); }
+  .wp-th { min-width: 48px; font-size: 11px; }
+}
+@media print {
+  .topbar, ai-menu, .wp .chips, .wp .btn { display: none !important; }
+  .shell { height: auto; overflow: visible; display: block; }
+  .body.scroll { overflow: visible; }
+  .wp .band, .wp .card { break-inside: avoid; }
+  .wp-mx td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.wp-mx td.wp-tot { background: #fff; color: var(--ink); border-inline-start: 1px solid var(--ink); }
+.wp-th.wp-tot { border-bottom-color: var(--ink); }
+.wp-chips .chip-t { min-height: 44px; }
+@media (max-width: 720px) {
+  .wp-mx { font-size: 11px; border-spacing: 1px; }
+  .wp-th { min-width: 38px; font-size: 10px; }
+  .wp-th button { padding: 4px 1px; }
+  .wp-mx td { min-width: 30px; height: 28px; }
+  .wp-rh { font-size: 11px; }
+}

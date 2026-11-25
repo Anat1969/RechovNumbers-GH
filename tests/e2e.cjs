@@ -37,6 +37,17 @@ async function mock(p) {
     const order = await p.evaluate(() => [...document.querySelectorAll('main .band-h')].map((h) => h.textContent));
     ok(order[0].includes('כל רובע במבט') && order[1].includes('איך נולד הציון'), 'בית: כותרת, הדיאגרמות של הרבעים, איך נולד הציון, ואז השאר');
     ok(await p.locator('.answers .answer').count() === 3, 'בית: שלוש תשובות');
+    // תוכנית העבודה: מפת עבודה, תרחיש, שני צירים והחלטות
+    await p.goto(BASE + '#/w', { waitUntil: 'networkidle' });
+    await p.waitForSelector('.wp-mx');
+    ok((await p.locator('h1').innerText()).includes('שלושה שלבים'), 'תוכנית עבודה: שורת התובנה מהתרחיש');
+    ok(await p.locator('.wp-mx tbody tr').count() >= 10, 'תוכנית עבודה: שורה לכל רובע במפת העבודה');
+    ok(await p.locator('.wp-steps').first().locator('.wp-step').count() === 4, 'תוכנית עבודה: ארבעה צעדים בתרחיש');
+    await p.locator('.wp-th button').first().click();
+    ok((await p.locator('#wp-dt').innerText()).includes('תוכנית האגף'), 'תוכנית עבודה: לחיצה על נושא פותחת את תוכנית האגף');
+    ok(await p.locator('.wp-dec li').count() >= 5, 'תוכנית עבודה: ההחלטות המבוקשות מהמנכ"ל');
+    await p.goto(BASE, { waitUntil: 'networkidle' });
+    await p.waitForSelector('.tile');
     ok(await p.locator('ai-menu .logo').isVisible(), 'כפתור הלוגו A&I בסרגל');
     ok(!(await p.locator('header >> text=העתקת קישור').first().isVisible().catch(() => false)), 'אין כפתורי פיתוח חופשיים בסרגל');
     ok(await p.locator('.num').count() > 10, 'מספרים מודגשים אוטומטית');

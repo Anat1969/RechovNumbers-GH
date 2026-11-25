@@ -33,6 +33,14 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const nav = useRef<HTMLElement>(null);
+  // בנייד שורת הלשוניות גוללת: הלשונית הפעילה תמיד בתוך המסך
+  useEffect(() => {
+    const el = nav.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    const n = nav.current;
+    if (!el || !n || n.scrollWidth <= n.clientWidth) return;
+    n.scrollLeft += el.getBoundingClientRect().left - n.getBoundingClientRect().left - (n.clientWidth - el.offsetWidth) / 2;
+  }, [route.page]);
   const lastQ = (() => { try { return localStorage.getItem('rn-last-q') || 'q-a'; } catch { return 'q-a'; } })();
 
   const hits = useMemo(() => {
@@ -51,6 +59,7 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
     ['העיר', '#/', ['home']],
     ['השכונה', `#/q/${lastQ}`, ['quarter', 'street']],
     ['פעולות', '#/a', ['actions']],
+    ['תוכנית עבודה', '#/w', ['plan']],
     ['ההצלבה', '#/x', ['cross']],
     ['איך מודדים', '#/m', ['method']],
   ];
@@ -62,7 +71,7 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
           <AppIcon />
           <span>רחוב טוב <b>במספרים</b></span>
         </a>
-        <nav className="tabs" aria-label="ניווט">
+        <nav className="tabs" aria-label="ניווט" ref={nav}>
           {tabs.map(([label, href, pages]) => (
             <button key={label} className="tab" aria-current={pages.includes(route.page) ? 'page' : undefined} onClick={() => go(href)}>{label}</button>
           ))}
