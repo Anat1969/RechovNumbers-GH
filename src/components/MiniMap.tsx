@@ -3,7 +3,7 @@ import type { Scored } from '../lib/model';
 import { scoreColor } from '../lib/model';
 
 /** מפה זעירה של רובע: כל רחוב קו בצבע הציון, עם קו מתאר כהה דק, כמו במפה מודפסת. */
-export function MiniMap({ streets }: { streets: Scored[] }) {
+export function MiniMap({ streets, draw }: { streets: Scored[]; draw?: number }) {
   const d = useMemo(() => {
     const pts = streets.flatMap((x) => (x.s.line ?? []).flat());
     if (!pts.length) return null;
@@ -21,8 +21,8 @@ export function MiniMap({ streets }: { streets: Scored[] }) {
   if (!d) return <svg />;
   return (
     <svg viewBox={d.vb} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-      <g>{d.paths.map((p) => <path key={p.c} d={p.d} fill="none" stroke="#1A1A18" strokeOpacity={0.55} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}</g>
-      <g>{d.paths.map((p) => <path key={p.c} d={p.d} fill="none" stroke={p.col} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}</g>
+      <g>{d.paths.map((p) => <path key={p.c} d={p.d} className={draw != null ? 'draw' : undefined} pathLength={draw != null ? 1 : undefined} style={draw != null ? { animationDelay: `${draw}s` } : undefined} fill="none" stroke="#1A1A18" strokeOpacity={0.55} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}</g>
+      <g>{d.paths.map((p) => <path key={p.c} d={p.d} className={draw != null ? 'draw' : undefined} pathLength={draw != null ? 1 : undefined} style={draw != null ? { animationDelay: `${draw}s` } : undefined} fill="none" stroke={p.col} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}</g>
     </svg>
   );
 }

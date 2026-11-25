@@ -1,36 +1,21 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useSweep } from '../components/Motion';
 import type { Model, Scored } from '../lib/model';
-import { PARAMS, crossTotals, scoreColor, textOn } from '../lib/model';
+import { PARAMS, PMAP, crossTotals, scoreColor } from '../lib/model';
 import { IND } from '../data/indicators';
-import { cityHeadline, fmtVal } from '../lib/insight';
+import { fmtVal } from '../lib/insight';
 import { actionPlan, cityStory, streetStory } from '../lib/story';
 import { CAN, GAPS, TIERS, type Tier } from '../lib/actions';
-import { go } from '../lib/route';
+import { go, setParam, type Route } from '../lib/route';
+import { QUARTERS } from '../data/quarters';
+import Icon from '../components/Icon';
 import Rich from '../components/Rich';
 import { MiniMap } from '../components/MiniMap';
+import StreetMap, { type MapMark } from '../components/StreetMap';
+import { GroupSketch, centerOf } from '../components/Sketch';
+import { Answer, Bar, ColorSelect, Histogram, Legend, Lines, ReadTabs, ScoreBadge } from '../components/Read';
 
-function Bar({ v, color }: { v: number; color?: string }) {
-  return <span className="bar"><i style={{ width: `${Math.max(0, Math.min(100, v))}%`, background: color ?? scoreColor(v) }} /></span>;
-}
-
-function Histogram({ hist }: { hist: number[] }) {
-  const max = Math.max(...hist, 1);
-  return (
-    <svg className="hist" viewBox="0 0 300 120" role="img" aria-label="התפלגות ציוני הרחובות" style={{ direction: 'ltr' }}>
-      {hist.map((n, i) => {
-        const h = (n / max) * 92;
-        return (
-          <g key={i}>
-            <rect x={300 - (i + 1) * 30 + 3} y={100 - h} width={24} height={h} fill={scoreColor(i * 10 + 5)} />
-            <text x={300 - i * 30 - 15} y={100 - h - 3} textAnchor="middle" className="hist-n">{n || ''}</text>
-            <text x={300 - i * 30 - 15} y={114} textAnchor="middle" className="hist-x">{i * 10}</text>
-          </g>
-        );
-      })}
-      <line x1="0" x2="300" y1="100" y2="100" stroke="#1A1A18" strokeWidth="1" />
-    </svg>
-  );
-}
+const TABS = [['ins', 'תובנות'], ['act', 'מעשים'], ['num', 'מספרים']] as const;
 
 function Compare({ model, a, b }: { model: Model; a: Scored; b: Scored }) {
   return (
@@ -47,175 +32,218 @@ function Compare({ model, a, b }: { model: Model; a: Scored; b: Scored }) {
   );
 }
 
-export default function Home({ model }: { model: Model }) {
-  const head = cityHeadline(model);
+export default function Home({ model, route }: { model: Model; route: Route }) {
   const cs = useMemo(() => cityStory(model), [model]);
   const plan = useMemo(() => actionPlan(model, cs.city.streets), [model, cs]);
+  const tab = TABS.find(([k]) => k === route.q.get('t'))?.[0] ?? 'ins';
+  const view = route.q.get('v') === 'grid' ? 'grid' : 'map';
+  const colorKey = route.q.get('c');
+  const colorBy = colorKey && PMAP[colorKey] && model.entering.includes(PMAP[colorKey]) ? PMAP[colorKey] : null;
   const cross = crossTotals();
-  // המיקרו: הרובע החלש, הרחוב החזק והחלש שלו
-  const low = cs.low;
+  const low = cs.low, top = cs.top;
   const microA = low?.sum.best, microB = low?.sum.worst;
   const micro = microB ? streetStory(model, microB) : null;
   const out = PARAMS.filter((p) => !model.stats[p.key].enters);
   const outPts = [...new Set(out.flatMap((p) => p.indicators))].filter((id) => !model.measuredInd.includes(id)).reduce((a, id) => a + IND[id].maxScore, 0);
-  const tiles = useMemo(() => cs.ranks.concat(), [cs]);
+  const weak = cs.prof[0];
+
+  const items = useMemo(() => cs.city.streets.map((x) => {
+    const v = colorBy ? x.scores[colorBy.key] : null;
+    return {
+      s: x.s, color: colorBy ? scoreColor(v == null ? null : v * 100) : scoreColor(x.total),
+      tip: colorBy ? `${x.s.name}: ${fmtVal(colorBy, x)}` : `${x.s.name}: ${x.total}`,
+    };
+  }), [cs, colorBy]);
+  const marks: MapMark[] = useMemo(() => cs.ranks.flatMap((r) => {
+    const c = centerOf(r.sum.streets);
+    return c ? [{ key: r.id, lon: c[0], lat: c[1], title: r.name.replace('רובע ', ''), value: r.sum.avg, color: scoreColor(r.sum.avg), onClick: () => go(`#/q/${r.id}`) }] : [];
+  }), [cs]);
+
+  // התנועה: הרחובות נמתחים מהחזק לחלש. הכיתוב מראה את סף הציון יורד, ובסוף את התמונה המלאה.
+  const SPAN = 3.4, DUR = 0.9;
+  const [replay, setReplay] = useState(0);
+  // הסדר הוא המידע: לפי הציון הכולל, או לפי הפרמטר שנבחר. כל בחירה מתחילה את הסרטון מחדש.
+  const valOf = (x: Scored) => (colorBy ? (x.scores[colorBy.key] == null ? null : Math.round(x.scores[colorBy.key]! * 100)) : x.total);
+  const order = useMemo(() => [...cs.city.streets].sort((a, b) => (valOf(b) ?? -1) - (valOf(a) ?? -1)), [cs, colorBy]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rankIdx = useMemo(() => Object.fromEntries(order.map((x, i) => [x.s.code, i])), [order]);
+  const delayOf = (code: number) => ((rankIdx[code] ?? order.length) / order.length) * SPAN;
+  const playKey = `${colorBy?.key ?? 'total'}-${replay}`;
+  const sweep = useSweep(SPAN + DUR, playKey);
+  const shownN = Math.min(order.length, Math.round((sweep * (SPAN + DUR)) / SPAN * order.length));
+  const cur = shownN ? order[Math.min(order.length - 1, shownN - 1)] : null;
+  const floor = cur ? valOf(cur) : null;
+  const meet = colorBy ? order.filter((x) => (valOf(x) ?? 0) >= 99).length : 0;
+  const doneLine = colorBy
+    ? `${colorBy.label}: ${Math.round((meet / order.length) * 100)}% מהרחובות ביעד`
+    : cs.edge.weak ? `${Math.round(cs.edge.weakOut / cs.edge.weak * 100)}% מהחלשים: תעשייה, נמל וצירים` : `כל ${order.length} הרחובות`;
+  const overlay = (
+    <div className={"sweep" + (sweep >= 1 ? " done" : "")} aria-live="off">
+      {sweep < 1 ? (
+        <>
+          <span className="sweep-l">{colorBy ? `${colorBy.label}: נמתחים מהחזק לחלש` : 'נמתחים מהחזק לחלש'}</span>
+          <span className="sweep-v"><span className="sweep-sw" style={{ background: scoreColor(floor) }} />{colorBy && cur ? <>עד <bdi className="val">{fmtVal(colorBy, cur)}</bdi></> : <>ציון <bdi className="num">{floor ?? '—'}</bdi> ומעלה</>} · <bdi className="num">{shownN}</bdi> רחובות</span>
+          <span className="sweep-bar"><i style={{ width: `${sweep * 100}%` }} /></span>
+        </>
+      ) : (
+        <>
+          <span className="sweep-l">{doneLine}</span>
+          <button className="press btn sweep-btn" onClick={() => setReplay((r) => r + 1)}><Icon n="replay" />הפעלה מחדש</button>
+        </>
+      )}
+    </div>
+  );
 
   return (
-    <main className="body scroll home-page">
-      <section className="hero">
-        <div>
-          <Rich as="h1" className="insight-line">{head.line}</Rich>
-          <Rich as="p" className="explain">{head.explain}</Rich>
+    <main className="atlas">
+      <header className="a-head">
+        <p className="crumbs">אשדוד</p>
+        <Rich as="h1" className="insight-line">{`==החסר הגדול של אשדוד: **${weak.p.label}**.==`}</Rich>
+        <div className="a-kpi">
+          <ScoreBadge count v={cs.city.avg} sub={`ממוצע **${cs.city.streets.length}** רחובות`} />
+          <div className="a-hist"><Histogram hist={cs.hist} small /><span className="src">כמה רחובות בכל ציון</span></div>
         </div>
+      </header>
+
+      <section className="a-map panel" aria-label="מפת העיר">
+        <div className="panel-h">
+          <h2>{colorBy ? `${colorBy.label} בכל רחוב בעיר` : 'הציון של כל רחוב בעיר'}</h2>
+          <div className="panel-tools">
+            <div className="view-sw" role="group" aria-label="תצוגת המפה">
+              <button className="press btn" aria-pressed={view === 'map'} onClick={() => setParam('v', null)}><Icon n="map" />מפה</button>
+              <button className="press btn" aria-pressed={view === 'grid'} onClick={() => setParam('v', 'grid')}><Icon n="grid" />רבעים</button>
+            </div>
+            <select className="field q-sel" value="" onChange={(e) => e.target.value && go(`#/q/${e.target.value}`)} aria-label="בחירת רובע">
+              <option value="">בחירת רובע</option>
+              {QUARTERS.filter((q) => q.kind === 'quarter').map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
+            </select>
+            <ColorSelect model={model} colorBy={colorBy} />
+          </div>
+        </div>
+        {view === 'grid' ? (
+          <div className="q-frames sq">
+            {cs.ranks.map(({ id, name, sum }) => {
+              const vals = colorBy ? sum.streets.map((x) => x.scores[colorBy.key]).filter((z): z is number => z != null) : [];
+              const v = colorBy ? (vals.length ? Math.round((vals.reduce((p, z) => p + z, 0) / vals.length) * 100) : null) : sum.avg;
+              return (
+                <button key={id} className="q-frame press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ${colorBy ? colorBy.label : 'ממוצע'} ${v}`}>
+                  <span className="qf-top"><span className="qf-name">{name}</span><span className="qf-n" style={{ background: scoreColor(v), color: v != null && (v < 18 || v > 82) ? '#fff' : '#1A1A18' }}>{v}</span></span>
+                  <GroupSketch streets={sum.streets} by={colorBy?.key} label={`מפת ${name}`} />
+                  <span className="qf-sub">{`${sum.streets.length} רחובות`}</span>
+                </button>
+              );
+            })}
+            <p className="src q-frames-note">כל רובע מצויר במסגרת משלו. המספר: הממוצע של הרובע. לחיצה פותחת את הרובע.</p>
+          </div>
+        ) : <StreetMap
+          items={items} ground={false} thin={0.55} marks={marks} label="מפת הרחובות של אשדוד"
+          delayOf={delayOf} drawDur={DUR} replay={playKey} overlay={overlay} marksDelay={SPAN + DUR}
+          onSelect={(code) => { const x = model.byCode[code]; if (x?.s.quarter_id) go(`#/q/${x.s.quarter_id}?s=${code}`); }}
+          legend={<Legend title={colorBy ? `${colorBy.label}: ציון מול היעד` : 'ציון רחוב, 0 עד 100'} note="המספר ליד שם הרובע: הממוצע שלו. לחיצה נכנסת לרובע." />}
+        />}
       </section>
 
-      <section className="band" aria-labelledby="q-h">
-        <h2 id="q-h" className="band-h"><span className="label">רבעים</span>כל רובע במבט, מהחזק לחלש</h2>
-        <div className="tiles">
-          {tiles.map(({ id, name, sum }) => (
-            <button key={id} className="tile press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ממוצע ${sum.avg}`}>
-              <span className="t-top"><span className="t-name">{name}</span><span className="t-score" style={{ color: scoreColor(sum.avg) }}>{sum.avg}</span></span>
-              <MiniMap streets={sum.streets} />
-              <span className="t-sub">{sum.streets.length} רחובות · מוביל: {sum.best?.s.name}</span>
-            </button>
-          ))}
-        </div>
-        <p className="src">כל קו הוא רחוב, בצבע הציון שלו: ירוק חזק, אדום חלש. לחיצה על רובע פותחת את המפה והדירוג שלו.</p>
-      </section>
+      <div className="a-body panel">
+        <ReadTabs tabs={TABS} cur={tab} />
+        <div className="a-pane">
+          {tab === 'ins' && <>
+            <div className="answers">
+              <Answer kind="good" q="איזה רובע מוביל?" name={top?.name} score={top?.sum.avg} sub={`הממוצע הגבוה מתוך **${cs.ranks.length}** רבעי המגורים.`} onClick={() => top && go(`#/q/${top.id}`)}
+                art={top && <GroupSketch streets={top.sum.streets} draw={0.3} />} />
+              <Answer kind="bad" q="איזה רובע צריך הכי הרבה עזרה?" name={low?.name} score={low?.sum.avg} sub={low?.sum.weakParam ? `החולשה העיקרית: **${low.sum.weakParam.p.label}**.` : ''} onClick={() => low && go(`#/q/${low.id}`)}
+                art={low && <GroupSketch streets={low.sum.streets} draw={0.6} />} />
+              <Answer kind="gap" q="מה הכי חסר בעיר?" name={weak?.p.label} score={weak?.score} sub={`רק **${weak?.meet}%** מהרחובות ביעד. לחיצה צובעת את המפה.`} pressed={colorBy?.key === weak?.p.key} onClick={() => setParam('c', colorBy?.key === weak?.p.key ? null : weak.p.key)}
+                art={<GroupSketch streets={cs.city.streets} by={weak?.p.key} thin draw={0.9} />} />
+            </div>
+            <h3 className="mini-h">{`${cs.ranks.length} הרבעים, מהחזק לחלש`}</h3>
+            <div className="tiles">
+              {cs.ranks.map(({ id, name, sum }, i) => (
+                <button key={id} className="tile press" onClick={() => go(`#/q/${id}`)} aria-label={`${name}, ממוצע ${sum.avg}`}>
+                  <span className="t-top"><span className="t-name">{name.replace('רובע ', '')}</span><span className="t-score" style={{ color: scoreColor(sum.avg) }}>{sum.avg}</span></span>
+                  <MiniMap streets={sum.streets} draw={1 + i * 0.12} />
+                </button>
+              ))}
+            </div>
+            <h3 className="mini-h">מה המספרים אומרים</h3>
+            <Lines lines={cs.lines} />
+            {low && microA && microB && micro && (
+              <div className="tone tone-insight">
+                <h4>דוגמה אחת: שני רחובות ב{low.name}</h4>
+                <Rich as="p">{`**${microA.s.name}** (**${microA.total}**) ו**${microB.s.name}** (**${microB.total}**): **${microA.total! - microB.total!}** נקודות באותו רובע.`}</Rich>
+                <button className="press btn" onClick={() => go(`#/s/${microB.s.code}`)}>מה עושים ב{microB.s.name}</button>
+              </div>
+            )}
+          </>}
 
-      <section className="band" aria-labelledby="how-h">
-        <h2 id="how-h" className="band-h"><span className="label">שיטה</span>איך נולד הציון</h2>
-        <div className="flow-row">
-          <a className="src-card press" href="https://nicestreets-vercal.vercel.app/" target="_blank" rel="noopener"><span className="label">רחובות טובים באשדוד</span><span className="big">15</span><span className="sub">עקרונות</span></a>
-          <span className="arrow">+</span>
-          <a className="src-card press" href="https://shchuna-360.vercel.app/" target="_blank" rel="noopener"><span className="label">שכונה 360</span><span className="big">44</span><span className="sub">מדדים, 120 נקודות</span></a>
-          <span className="arrow">→</span>
-          <div className="src-card"><span className="label">נוגעים ברחוב</span><span className="big">{cross.touched.length}</span><span className="sub">{cross.points} נקודות</span></div>
-          <span className="arrow">→</span>
-          <div className="src-card" style={{ borderColor: 'var(--measure)' }}><span className="label">נמדדים היום</span><span className="big" style={{ color: 'var(--measure)' }}>{model.measuredInd.length}</span><span className="sub">{model.maxPoints} נקודות, {model.entering.length} פרמטרים</span></div>
-          <span className="arrow">→</span>
-          <div className="src-card"><span className="label">ציון רחוב</span><span className="big">0–100</span><span className="sub">משוקלל לפי שכונה 360</span></div>
-        </div>
-        <p className="src">השראה: <strong>Allan B. Jacobs</strong>, Great Streets, 1993: רחובות שנמדדו ושורטטו באותו קנה מידה, כדי להשוות ביניהם.</p>
-      </section>
-      <section className="band" aria-labelledby="ans-h">
-        <h2 id="ans-h" className="band-h"><span className="label">תשובות</span>שלוש התשובות של העיר</h2>
-        <div className="answers" aria-label="שלוש התשובות של העיר">
-          <button className="answer press" onClick={() => cs.top && go(`#/q/${cs.top.id}`)}>
-            <span className="q">איזה רובע מוביל?</span>
-            <span className="big">{cs.top?.name}{cs.top && <span className="score" style={{ background: scoreColor(cs.top.sum.avg), color: textOn(cs.top.sum.avg) }}>{cs.top.sum.avg}</span>}</span>
-            <span className="sub">ממוצע הרחובות הגבוה מתוך {cs.ranks.length} רבעי מגורים.</span>
-          </button>
-          <button className="answer press" onClick={() => low && go(`#/q/${low.id}`)}>
-            <span className="q">איזה רובע צריך הכי הרבה עזרה?</span>
-            <span className="big">{low?.name}{low && <span className="score" style={{ background: scoreColor(low.sum.avg), color: textOn(low.sum.avg) }}>{low.sum.avg}</span>}</span>
-            <span className="sub">{low?.sum.weakParam ? `החולשה העיקרית: ${low.sum.weakParam.p.label}.` : ''}</span>
-          </button>
-          <button className="answer press" onClick={() => go('#/a')}>
-            <span className="q">מה הכי חסר בעיר?</span>
-            <span className="big">{cs.prof[0]?.p.label}<span className="score" style={{ background: scoreColor(cs.prof[0]?.score ?? 0), color: textOn(cs.prof[0]?.score ?? 0) }}>{cs.prof[0]?.score}</span></span>
-            <span className="sub">רק {cs.prof[0]?.meet}% מהרחובות ביעד. לחיצה: תוכנית הפעולה.</span>
-          </button>
-        </div>
-      </section>
+          {tab === 'act' && <>
+            <Rich as="p" className="lead">{`==שלוש דרגות, לפי מה שאפשר לעשות מחר בבוקר.== הסדר בתוך כל דרגה: כמה נקודות אפשר להחזיר.`}</Rich>
+            {(['now', 'think', 'plan'] as Tier[]).map((t) => {
+              const rows = plan.filter((r) => r.tier === t);
+              return (
+                <div key={t} className={`tier tier-${t}`}>
+                  <h3 className="mini-h">{TIERS[t].title}</h3>
+                  <p className="src">{TIERS[t].sub}</p>
+                  {rows.map((r) => (
+                    <div key={r.p.key} className="tier-item has-art">
+                      <span className="art"><GroupSketch streets={cs.city.streets} hl={new Set(r.streets.map((x) => x.s.code))} thin label={`איפה: ${r.p.label}`} /></span>
+                      <Rich as="strong">{`${r.p.label}: **${r.streets.length}** רחובות, **${r.stake}** נקודות`}</Rich>
+                      <span>{t === 'plan' ? r.guideline : r.existing}</span>
+                      <span className="src">אחראי: {r.who}</span>
+                    </div>
+                  ))}
+                  {!rows.length && <p className="muted">הפרמטרים שבדרגה הזו ({t === 'now' ? 'עצים, ספסלים, תאורה' : '—'}) עוד לא נמדדים מספיק.</p>}
+                </div>
+              );
+            })}
+            <button className="press btn" onClick={() => go('#/a')}><Icon n="act" />תוכנית הפעולה המלאה, לפי רובע</button>
+          </>}
 
-      <section className="band" aria-labelledby="macro-h">
-        <h2 id="macro-h" className="band-h"><span className="label">מקרו</span>איפה העיר חזקה, ואיפה היא נתקעת</h2>
-        <div className="band-grid">
-          <div className="card">
+
+          {tab === 'num' && <>
+            <h3 className="mini-h">איפה העיר חזקה, ואיפה היא נתקעת</h3>
             <div className="prof-h"><span>פרמטר</span><span>ממוצע הציון</span><span>ביעד</span><span>רחוקים</span></div>
             {cs.prof.map((r) => (
-              <button key={r.p.key} className="prof-row" onClick={() => go(`#/q/${low?.id ?? 'q-a'}?c=${r.p.key}`)} title={`היעד: ${r.p.target}`}>
+              <button key={r.p.key} className="prof-row" aria-pressed={colorBy?.key === r.p.key} onClick={() => setParam('c', colorBy?.key === r.p.key ? null : r.p.key)} title={`היעד: ${r.p.target}. לחיצה צובעת את המפה.`}>
                 <span>{r.p.label}<small>{r.p.target}</small></span>
                 <span className="prof-bar"><Bar v={r.score} /><bdi className="num">{r.score}</bdi></span>
                 <bdi className="num ok">{r.meet}%</bdi>
                 <bdi className="num bad">{r.far}%</bdi>
               </button>
             ))}
-            <p className="src">ממוצע הציון של כל פרמטר ב-{cs.city.streets.length} רחובות. "ביעד": ציון מלא. "רחוקים": פחות מרבע מהיעד.</p>
-          </div>
-          <div className="card story">
+            <p className="src">"ביעד": ציון מלא. "רחוקים": פחות מרבע מהיעד. לחיצה על שורה צובעת את המפה.</p>
+
             <h3 className="mini-h">התפלגות הציונים</h3>
             <Histogram hist={cs.hist} />
             <p className="src">כמה רחובות בכל טווח ציון, מ-0 (ימין) עד 100 (שמאל).</p>
-            {cs.lines.map((l, i) => <Rich key={i} as="p">{l}</Rich>)}
-          </div>
-          <div className="card">
-            <h3 className="mini-h">הרבעים, מהחזק לחלש</h3>
-            <div className="qrank">
-              {cs.ranks.map((r) => (
-                <button key={r.id} className="qrank-row" onClick={() => go(`#/q/${r.id}`)}>
-                  <span>{r.name}</span><Bar v={r.sum.avg ?? 0} /><bdi className="num">{r.sum.avg}</bdi>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {low && microA && microB && micro && (
-        <section className="band" aria-labelledby="micro-h">
-          <h2 id="micro-h" className="band-h"><span className="label">מיקרו</span>דוגמה אחת: שני רחובות ב{low.name}</h2>
-          <div className="band-grid two">
-            <div className="card">
+            {low && microA && microB && <>
+              <h3 className="mini-h">מיקרו: שני רחובות ב{low.name}</h3>
               <Compare model={model} a={microA} b={microB} />
-              <Rich as="p" className="lead" >{`==**${microA.s.name}** ו**${microB.s.name}** באותו רובע, ו-**${microA.total! - microB.total!}** נקודות ביניהם.== כך נראה הפער פרמטר אחר פרמטר.`}</Rich>
-            </div>
-            <div className="card">
-              <h3 className="mini-h">מה עושים ב{microB.s.name}</h3>
-              {micro.lines.map((l, i) => <Rich key={i} as="p">{l}</Rich>)}
-              <div className="acts">
-                {micro.acts.slice(0, 4).map((a) => (
-                  <div key={a.p.key} className={`tone ${TIERS[a.tier].tone}`}>
-                    <h4>{TIERS[a.tier].title} · {a.p.label}</h4>
-                    <p>{a.text}</p>
-                    <p className="src">{a.who}</p>
-                  </div>
-                ))}
-              </div>
-              <button className="press btn" onClick={() => go(`#/s/${microB.s.code}`)}>כל המדידות של {microB.s.name}</button>
-            </div>
-          </div>
-        </section>
-      )}
+            </>}
 
-      <section className="band" aria-labelledby="act-h">
-        <h2 id="act-h" className="band-h"><span className="label">פעולה</span>מה עושים בעיר, לפי סדר</h2>
-        <div className="band-grid three">
-          {(['now', 'think', 'plan'] as Tier[]).map((t) => (
-            <div key={t} className={`card tier tier-${t}`}>
-              <h3 className="mini-h">{TIERS[t].title}</h3>
-              <p className="src">{TIERS[t].sub}</p>
-              {plan.filter((r) => r.tier === t).map((r) => (
-                <div key={r.p.key} className="tier-item">
-                  <Rich as="strong">{`${r.p.label}: **${r.streets.length}** רחובות`}</Rich>
-                  <span>{t === 'plan' ? r.guideline : r.existing}</span>
+            <h3 className="mini-h">איך נולד הציון</h3>
+            <div className="flow-row">
+              <a className="src-card press" href="https://nicestreets-vercal.vercel.app/" target="_blank" rel="noopener"><span className="label">רחובות טובים</span><span className="big">15</span><span className="sub">עקרונות</span></a>
+              <a className="src-card press" href="https://shchuna-360.vercel.app/" target="_blank" rel="noopener"><span className="label">שכונה 360</span><span className="big">44</span><span className="sub">מדדים, 120 נקודות</span></a>
+              <div className="src-card"><span className="label">נוגעים ברחוב</span><span className="big">{cross.touched.length}</span><span className="sub">{cross.points} נקודות</span></div>
+              <div className="src-card measured"><span className="label">נמדדים היום</span><span className="big">{model.measuredInd.length}</span><span className="sub">{model.maxPoints} נקודות, {model.entering.length} פרמטרים</span></div>
+            </div>
+
+            <h3 className="mini-h">מה עוד לא נמדד</h3>
+            <Rich as="p" className="lead">{`==**${outPts}** נקודות נוגעות ברחוב ועוד לא בציון.== ${out.map((p) => p.label).join(', ')} ממופים בפחות מרבע מהרחובות.`}</Rich>
+            <div className="gaps">
+              {GAPS.slice(0, 4).map((g) => (
+                <div key={g.what} className="gap">
+                  <span className={`can can-${g.can}`}>{CAN[g.can]}</span>
+                  <strong>{g.what}</strong>
+                  <span className="src">{g.source}</span>
                 </div>
               ))}
-              {!plan.some((r) => r.tier === t) && <p className="muted">הפרמטרים שבשלב הזה ({t === 'now' ? 'עצים, ספסלים, תאורה' : '—'}) עוד לא נמדדים מספיק.</p>}
             </div>
-          ))}
+            <button className="press btn" onClick={() => go('#/m')}>כל הפערים והבסיס של כל מדידה</button>
+            <p className="src">השראה: <strong>Allan B. Jacobs</strong>, Great Streets, 1993: רחובות שנמדדו ושורטטו באותו קנה מידה, כדי להשוות ביניהם.</p>
+          </>}
         </div>
-        <button className="press btn" style={{ marginTop: 10 }} onClick={() => go('#/a')}>תוכנית הפעולה המלאה, לפי רובע</button>
-      </section>
-
-      <section className="band" aria-labelledby="gap-h">
-        <h2 id="gap-h" className="band-h"><span className="label">אמינות</span>מה עוד לא נמדד, ואיך משלימים</h2>
-        <div className="gaps">
-          {GAPS.slice(0, 6).map((g) => (
-            <div key={g.what} className="gap card">
-              <span className={`can can-${g.can}`}>{CAN[g.can]}</span>
-              <strong>{g.what}</strong>
-              <span className="src">היום: {g.now}</span>
-              <span>{g.source}</span>
-            </div>
-          ))}
-        </div>
-        <Rich as="p" className="lead">{`==**${outPts}** נקודות של שכונה 360 נוגעות ברחוב ועוד לא בציון.== ${out.map((p) => p.label).join(', ')} ממופים בפחות מרבע מהרחובות.`}</Rich>
-        <button className="press btn" style={{ marginTop: 10 }} onClick={() => go('#/m')}>כל הפערים והבסיס של כל מדידה</button>
-      </section>
-
+      </div>
     </main>
   );
 }
-

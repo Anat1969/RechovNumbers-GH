@@ -1,12 +1,15 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Street } from '../lib/model';
 import { SUPABASE, ANON } from '../lib/data';
+import Icon from './Icon';
 
 export interface MapItem { s: Street; color: string; label?: boolean; tip: string; weight?: number }
+/** תווית שטח (רובע) במרכז הרחובות שלו: שם וציון, ולחיצה נכנסת אליו. */
+export interface MapMark { key: string; lon: number; lat: number; title: string; value?: number | null; color?: string; ink?: string; onClick?: () => void }
 
 /** רוחב הקו לפי סוג הדרך, בפיקסלים: עורק רחב, רחוב מגורים צר. */
 const WIDTH: Record<string, number> = { trunk: 9, primary: 9, secondary: 8, tertiary: 7, unclassified: 5.5, residential: 5.5, service: 4.5, living_street: 4.5, pedestrian: 4.5, footway: 3.5, path: 3.5 };
-const widthOf = (s: Street) => WIDTH[s.m.class ?? ''] ?? 5;
+const widthOf0 = (s: Street) => WIDTH[s.m.class ?? ''] ?? 5;
 
 /** רקע דמות־קרקע (Nolli): בניינים וגנים לשטח המפה, מ-rn_ground. נטען פעם אחת לכל שטח ונשמר בזיכרון. */
 type Ground = { b: number[][][]; p: number[][][] };
@@ -27,8 +30,11 @@ const K = 111320; // מטרים למעלה רוחב
 type VB = [number, number, number, number];
 
 /** מפת רחובות ב-SVG: הטלה שווה־מרחקים מקומית, זום בגלגלת, גרירה, ותוויות בלי חפיפה. */
-export default function StreetMap({ items, context = [], selected, onSelect, legend, label = 'מפת הרחובות' }: {
+export default function StreetMap({ items, context = [], selected, onSelect, legend, label = 'מפת הרחובות', marks = [], ground: withGround = true, thin = 1, focus = null, satOn = false, delayOf, drawDur = 1.1, replay = 0, overlay, marksDelay = 0 }: {
   items: MapItem[]; context?: Street[]; selected?: number | null; onSelect?: (code: number) => void; legend?: ReactNode; label?: string;
+  marks?: MapMark[]; ground?: boolean; thin?: number; focus?: number | null; satOn?: boolean;
+  /** תנועה עם משמעות: עיכוב בשניות לכל רחוב, למשל לפי הציון. replay משתנה = מציירים שוב. */
+  delayOf?: (code: number) => number; drawDur?: number; replay?: number | string; overlay?: ReactNode; marksDelay?: number;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
@@ -36,6 +42,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   const [tip, setTip] = useState<{ x: number; y: number; t: string } | null>(null);
   const drag = useRef<{ x: number; y: number; vb: VB; moved: boolean } | null>(null);
   const uid = useId().replace(/:/g, '');
+  // בקנה מידה של עיר הקווים דקים יותר, כדי שהרשת תיקרא ולא תיסתם
+  const widthOf = (s: Street) => widthOf0(s) * thin;
 
   const geo = useMemo(() => {
     const pts = items.flatMap((i) => (i.s.line ?? []).flat());
@@ -63,7 +71,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
     };
     const ring = (r: number[][]) => r.map(([lo, la], i) => { const [x, y] = P(lo, la); return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`; }).join('') + 'Z';
     const W = (maxX - minX) * K * cos, H = (maxY - minY) * K;
-    return { P, path, mid, labelPath, ring, W: Math.max(W, 200), H: Math.max(H, 200), minX, maxX, minY, maxY };
+    const inv = (x: number, y: number): [number, number] => [x / (K * cos) + minX, maxY - y / K];
+    return { P, inv, cos, path, mid, labelPath, ring, W: Math.max(W, 200), H: Math.max(H, 200), minX, maxX, minY, maxY };
   }, [items]);
 
   useEffect(() => {
@@ -74,12 +83,22 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
 
   const fit = (): VB | null => {
     if (!geo) return null;
-    const pad = 0.08, w = geo.W * (1 + pad * 2), h = geo.H * (1 + pad * 2);
     const ar = size.w / size.h;
+    // מיקוד ברחוב אחד: המסגרת סביבו, לפחות 700 מ', כדי שהרחוב ייראה בתוך השכנים שלו
+    const f = focus != null ? items.find((i) => i.s.code === focus) : null;
+    const fp = f ? (f.s.line ?? []).flat().map(([lo, la]) => geo.P(lo, la)) : [];
+    if (fp.length) {
+      const xs = fp.map((p) => p[0]), ys = fp.map((p) => p[1]);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+      const w0 = Math.max(Math.max(...xs) - Math.min(...xs), 700) * 1.35, h0 = Math.max(Math.max(...ys) - Math.min(...ys), 700) * 1.35;
+      const [vw, vh] = w0 / h0 > ar ? [w0, w0 / ar] : [h0 * ar, h0];
+      return [cx - vw / 2, cy - vh / 2, vw, vh];
+    }
+    const pad = 0.08, w = geo.W * (1 + pad * 2), h = geo.H * (1 + pad * 2);
     const [vw, vh] = w / h > ar ? [w, w / ar] : [h * ar, h];
     return [geo.W / 2 - vw / 2, geo.H / 2 - vh / 2, vw, vh];
   };
-  useEffect(() => { setVb(fit()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [geo, size.w, size.h]);
+  useEffect(() => { setVb(fit()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [geo, size.w, size.h, focus]);
 
   const ctxPaths = useMemo(() => {
     if (!geo) return [];
@@ -90,23 +109,43 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   const paths = useMemo(() => (geo ? items.map((i) => ({ i, d: geo.path(i.s), mid: geo.mid(i.s), lp: i.label ? geo.labelPath(i.s) : null })) : []), [items, geo]);
 
   const [ground, setGround] = useState<{ b: string; p: string } | null>(null);
+  // תצלום אוויר: מה שבאמת יש ברחוב, מתחת לקווי הציון. נזכר בין דפים.
+  const [sat, setSat] = useState(() => { try { return localStorage.getItem('rn-sat') === '1'; } catch { return false; } });
+  // מצב שטח: הלוויין נדלק לבד, בלי לשנות את הבחירה השמורה
+  useEffect(() => { if (satOn) setSat(true); }, [satOn]);
+  const toggleSat = () => setSat((v) => { try { localStorage.setItem('rn-sat', v ? '0' : '1'); } catch { /* פרטי */ } return !v; });
   useEffect(() => {
-    if (!geo) return;
+    if (!geo || !withGround) return;
     const m = 0.003; let alive = true;
     loadGround([geo.minX - m, geo.minY - m, geo.maxX + m, geo.maxY + m]).then((g) => {
       if (!alive || !g) return;
       setGround({ b: (g.b ?? []).map(geo.ring).join(''), p: (g.p ?? []).map(geo.ring).join('') });
     });
     return () => { alive = false; };
-  }, [geo]);
+  }, [geo, withGround]);
 
   if (!geo || !vb) return <div className="map-wrap" ref={wrap}><div className="empty">אין לרחובות האלה קו על המפה.</div></div>;
 
   const scale = vb[2] / size.w; // יחידות מפה לפיקסל
+  // אריחי Web Mercator, כל אריח מוטל כמלבן להטלה המקומית (בקנה מידה של עיר ההפרש זניח)
+  const tiles: { k: string; href: string; x: number; y: number; w: number; h: number }[] = [];
+  if (sat) {
+    const [lo0, la1] = geo.inv(vb[0], vb[1]), [lo1, la0] = geo.inv(vb[0] + vb[2], vb[1] + vb[3]);
+    const tx = (lo: number, z: number) => Math.floor(((lo + 180) / 360) * 2 ** z);
+    const ty = (la: number, z: number) => { const r = la * Math.PI / 180; return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z); };
+    const lon = (x: number, z: number) => (x / 2 ** z) * 360 - 180;
+    const lat = (y: number, z: number) => { const n = Math.PI - (2 * Math.PI * y) / 2 ** z; return (180 / Math.PI) * Math.atan(Math.sinh(n)); };
+    let z = Math.min(19, Math.max(11, Math.ceil(Math.log2((156543.03 * geo.cos) / Math.max(scale, 0.01)))));
+    while (z > 11 && (tx(lo1, z) - tx(lo0, z) + 1) * (ty(la0, z) - ty(la1, z) + 1) > 90) z--;
+    for (let x = tx(lo0, z); x <= tx(lo1, z); x++) for (let y = ty(la1, z); y <= ty(la0, z); y++) {
+      const [ax, ay] = geo.P(lon(x, z), lat(y, z)), [bx, by] = geo.P(lon(x + 1, z), lat(y + 1, z));
+      tiles.push({ k: `${z}/${y}/${x}`, href: `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, x: ax, y: ay, w: bx - ax, h: by - ay });
+    }
+  }
   // תוויות: לפי סדר חשיבות, ומדלגים על מה שחופף לתווית שכבר הונחה
   const placed: { x: number; y: number; w: number }[] = [];
-  const labels = paths.filter((p) => p.i.label && p.mid && p.lp && p.lp.len / scale > p.i.s.name.length * 7.5 + 16).sort((a, b) => (b.i.weight ?? 0) - (a.i.weight ?? 0)).filter((p) => {
-    const [x, y] = p.mid!; const w = p.i.s.name.length * 7.5 * scale;
+  const labels = paths.filter((p) => p.i.label && p.mid && p.lp && p.lp.len / scale > p.i.s.name.length * 8 + 16).sort((a, b) => (b.i.weight ?? 0) - (a.i.weight ?? 0)).filter((p) => {
+    const [x, y] = p.mid!; const w = p.i.s.name.length * 8 * scale;
     const hit = placed.some((q) => Math.abs(q.x - x) < (q.w + w) / 2 + 6 * scale && Math.abs(q.y - y) < 18 * scale);
     if (!hit) placed.push({ x, y, w }); return !hit;
   });
@@ -121,11 +160,12 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
   };
 
   return (
-    <div className="map-wrap" ref={wrap}>
+    <div className={'map-wrap' + (sat ? ' is-sat' : '')} ref={wrap}>
       <div className="map-tools">
-        <button className="press" aria-label="הגדלה" onClick={() => zoom(0.7)}>+</button>
-        <button className="press" aria-label="הקטנה" onClick={() => zoom(1.4)}>−</button>
-        <button className="press" aria-label="איפוס המפה" onClick={() => setVb(fit())} style={{ fontSize: 11 }}>⤢</button>
+        <button className="press sat-btn" aria-pressed={sat} onClick={toggleSat} title="תצלום אוויר מתחת לרחובות"><Icon n="sat" size={16} />לוויין</button>
+        <button className="press" aria-label="הגדלה" onClick={() => zoom(0.7)}><Icon n="plus" size={16} /></button>
+        <button className="press" aria-label="הקטנה" onClick={() => zoom(1.4)}><Icon n="minus" size={16} /></button>
+        <button className="press" aria-label="איפוס המפה" onClick={() => setVb(fit())}><Icon n="fit" size={16} /></button>
       </div>
       <svg
         className="map-svg" viewBox={vb.join(' ')} role="img" aria-label={label}
@@ -140,7 +180,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
         onPointerUp={() => { setTimeout(() => { drag.current = null; }, 0); }}
         onPointerLeave={() => { drag.current = null; setTip(null); }}
       >
-        {ground && <g className="ground">
+        {sat && <g className="sat-tiles">{tiles.map((t) => <image key={t.k} href={t.href} x={t.x} y={t.y} width={t.w + 0.5} height={t.h + 0.5} preserveAspectRatio="none" />)}</g>}
+        {ground && !sat && <g className="ground">
           <path d={ground.p} className="g-park" />
           <path d={ground.b} className="g-bld" />
         </g>}
@@ -148,7 +189,7 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
         <g>{ctxPaths.map((p) => <path key={p.code} className="ctx" d={p.d} vectorEffect="non-scaling-stroke" />)}</g>
         <g>
           {paths.map(({ i, d }) => (
-            <path key={i.s.code} d={d} className="street-case" strokeWidth={widthOf(i.s) + (selected === i.s.code ? 6 : 2.4)} vectorEffect="non-scaling-stroke" opacity={selected && selected !== i.s.code ? 0.35 : 1} pointerEvents="none" />
+            <path key={i.s.code + '-' + replay} d={d} className={'street-case' + (delayOf ? ' draw' : '')} pathLength={delayOf ? 1 : undefined} style={delayOf ? { animationDelay: `${delayOf(i.s.code)}s`, animationDuration: `${drawDur}s` } : undefined} strokeWidth={widthOf(i.s) + (selected === i.s.code ? 6 : 2.4)} vectorEffect="non-scaling-stroke" opacity={selected && selected !== i.s.code ? 0.35 : 1} pointerEvents="none" />
           ))}
         </g>
         <g>
@@ -156,7 +197,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
             const on = selected === i.s.code;
             return (
               <path
-                key={i.s.code} d={d} className="street draw" pathLength={1}
+                key={i.s.code + '-' + replay} d={d} className="street draw" pathLength={1}
+                style={delayOf ? { animationDelay: `${delayOf(i.s.code)}s`, animationDuration: `${drawDur}s` } : undefined}
                 stroke={i.color} strokeWidth={widthOf(i.s) + (on ? 3 : 0)} vectorEffect="non-scaling-stroke"
                 opacity={selected && !on ? 0.45 : 1}
                 data-code={i.s.code}
@@ -170,11 +212,31 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
         <g>
           <defs>{labels.map((p) => <path key={p.i.s.code} id={`lp-${uid}-${p.i.s.code}`} d={p.lp!.d} />)}</defs>
           {labels.map((p) => (
-            <text key={p.i.s.code} className="lbl" style={{ fontSize: 12.5 * scale, strokeWidth: 3.6 * scale }} dy={-(widthOf(p.i.s) / 2 + 4) * scale}>
+            <text key={p.i.s.code} className="lbl" style={{ fontSize: 13.5 * scale, strokeWidth: 3.8 * scale }} dy={-(widthOf(p.i.s) / 2 + 4) * scale}>
               <textPath href={`#lp-${uid}-${p.i.s.code}`} startOffset="50%" textAnchor="middle">{p.i.s.name}</textPath>
             </text>
           ))}
         </g>
+        {marks.length > 0 && <g className="marks fade-in" key={'m' + replay} style={{ animationDelay: `${marksDelay}s` }}>
+          {(() => {
+            // תוויות שטח בלי חפיפה: מה שמתנגש מוסתר עד שמגדילים
+            const box: { x: number; y: number }[] = [];
+            return marks.map((m) => ({ m, p: geo.P(m.lon, m.lat) })).filter(({ p: [x, y] }) => {
+              const hit = box.some((b) => Math.abs(b.x - x) < 40 * scale && Math.abs(b.y - y) < 46 * scale);
+              if (!hit) box.push({ x, y }); return !hit;
+            });
+          })().map(({ m, p: [x, y] }) => {
+            return (
+              <g key={m.key} className="mark" onClick={() => { if (!drag.current?.moved) m.onClick?.(); }} role="link" aria-label={`${m.title}${m.value != null ? `, ממוצע ${m.value}` : ''}`}>
+                <text x={x} y={y} textAnchor="middle" className="m-t" style={{ fontSize: 15 * scale, strokeWidth: 5 * scale }}>{m.title}</text>
+                {m.value != null && <>
+                  <rect x={x - 15 * scale} y={y + 5 * scale} width={30 * scale} height={19 * scale} fill={m.color} stroke="#fff" strokeWidth={1.5 * scale} />
+                  <text x={x} y={y + 19.5 * scale} textAnchor="middle" className="m-v" style={{ fontSize: 13.5 * scale, fill: m.ink ?? ((m.value ?? 0) > 82 ? '#fff' : '#1A1A18') }}>{m.value}</text>
+                </>}
+              </g>
+            );
+          })}
+        </g>}
       </svg>
       {tip && <div className="map-tip" style={{ left: tip.x, top: tip.y }}>{tip.t}</div>}
       {(() => {
@@ -189,6 +251,8 @@ export default function StreetMap({ items, context = [], selected, onSelect, leg
       })()}
       <svg className="north" width="22" height="30" viewBox="0 0 22 30" aria-label="צפון"><path d="M11 2 L18 22 L11 17 L4 22 Z" fill="#1A1A18" /><path d="M11 2 L4 22 L11 17 Z" fill="#fff" stroke="#1A1A18" strokeWidth="1" /><text x="11" y="29.5" textAnchor="middle" fontSize="8" fontWeight="600" fill="#1A1A18">צ</text></svg>
       {legend && <div className="legend">{legend}</div>}
+      {sat && <span className="sat-credit">תצלום: Esri, Maxar, Earthstar Geographics</span>}
+      {overlay}
     </div>
   );
 }

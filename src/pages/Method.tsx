@@ -3,6 +3,7 @@ import { COVERAGE_MIN, PARAMS } from '../lib/model';
 import { CRIT } from '../data/criteria';
 import { IND } from '../data/indicators';
 import Rich from '../components/Rich';
+import { MethodNav } from '../components/Read';
 import { ACTIONS, BASIS, CAN, GAPS } from '../lib/actions';
 
 export default function Method({ model, takenAt, source }: { model: Model; takenAt: string; source: string }) {
@@ -12,11 +13,13 @@ export default function Method({ model, takenAt, source }: { model: Model; taken
     <main className="body scroll">
       <div className="head">
         <div>
+          <MethodNav cur="m" />
           <Rich as="h1" className="insight-line">{'==כל ציון מסביר את עצמו.=='}</Rich>
           <Rich as="p" className="explain">{`לכל פרמטר: מה נמדד, איך חושב, על מה נשען, ומה המגבלה. נתונים מ-**${date}**, ${source === 'live' ? 'חיים מהשרת' : 'מהתמונה השמורה'}.`}</Rich>
         </div>
       </div>
 
+      <div className="method-top">
       <section className="prose card">
         <h2 className="section-title" style={{ marginTop: 0 }}>על מה הכלי נשען</h2>
         <Rich as="p">{'**שכונה 360°**: 44 מדדים לתכנון שכונה בת־קיימא, 120 נקודות, כפי שהם באפליקציה "שכונה 360: שער היעדים". המשקל של כל מדד בציון הרחוב הוא הניקוד שלו בחוברת.'}</Rich>
@@ -28,6 +31,25 @@ export default function Method({ model, takenAt, source }: { model: Model; taken
         <Rich as="p">{'**שכבות שקופות**: הציון והתובנות מחושבים בקוד. האבחון המזוקק נכתב במודל (Gemini, ו-Claude כגיבוי) ומסומן ככזה. ההחלטה נשארת אצל איש המקצוע.'}</Rich>
         <Rich as="p">{'**מה הכלי לא עושה**: לא מודד רוחב זכות דרך, יחס גובה לרוחב, מפגש מגרש־רחוב ושפה משותפת. אלה דורשים שכבות GIS עירוניות או סקר שטח.'}</Rich>
       </section>
+      <aside className="card gis-card" aria-label="השלב הבא: שכבות GIS">
+        <h2 className="section-title" style={{ marginTop: 0 }}>השלב הבא: שכבות ה-GIS העירוניות</h2>
+        <Rich as="p" className="lead">{`==מקור אחד, שתי אפליקציות.== השכבות ייכנסו ל-ASHDODMAP, ומשם ימדדו את הרחובות כאן ואת המדדים בשכונה 360.`}</Rich>
+        <div className="gis-flow">
+          <span className="gf gf-src">שכבות GIS עירוניות</span><span className="gf-a">→</span>
+          <span className="gf">ASHDODMAP</span><span className="gf-a">→</span>
+          <span className="gf gf-out">רחוב טוב במספרים · שכונה 360</span>
+        </div>
+        <h3 className="mini-h">מה ייכנס לציון כשהשכבות יעלו</h3>
+        {GAPS.filter((g) => g.can === 'city').map((g) => (
+          <div key={g.what} className="gap">
+            <strong>{g.what}</strong>
+            <span className="src">היום: {g.now} · מקור: {g.source}</span>
+            <span>מוסיף: {g.gain}</span>
+          </div>
+        ))}
+        <p className="src">כל פרמטר שעובר את סף הכיסוי (25% מהרחובות) נכנס לציון לבד, וצובע את הרחוב בכחול־מדידה: נמדד בפועל.</p>
+      </aside>
+      </div>
 
       <h2 className="section-title">האם המדידה מבוססת? רמת הבסיס של כל יעד</h2>
       <div className="basis-key">

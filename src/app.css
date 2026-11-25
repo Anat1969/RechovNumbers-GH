@@ -218,7 +218,7 @@ h1.insight-line { font-size: clamp(20px, 2vw, 28px); margin: 0; line-height: 1.2
 @media (max-width: 720px) {
   .home > .panel:first-child { max-height: 52vh; }
   .home > .panel:last-child { max-height: 40vh; }
-  .cols3 > .panel { max-height: 62vh; }
+  .cols3 > .panel { max-height: 44vh; }
   .answer .sub { display: none; }
   .answers { gap: 6px; }
   .answer { padding: 8px 12px; }
@@ -365,6 +365,427 @@ h1.insight-line { font-size: clamp(20px, 2vw, 28px); margin: 0; line-height: 1.2
 @media (max-width: 720px) { .ind-line { grid-template-columns: minmax(0,1fr); } .crit-grid { grid-template-columns: minmax(0,1fr); } }
 .matrix td.chap, .matrix.wide td.chap { height: 4px; }
 .matrix.wide th.colh { height: 230px; }
+
+/* ===== אטלס: מפה גדולה משמאל, טור קריאה מימין (16.11.2026) =====
+   אותו מבנה בכל רמה: עיר, רובע, רחוב. הטור ביחס זהוב למפה (38:62). */
+body { font-size: 17px; line-height: 1.6; }
+.shell { grid-template-rows: auto minmax(0, 1fr); }
+.tab { font-size: 16px; padding: 17px 16px; }
+.brand { font-size: 18px; }
+.crumbs { font-size: 14px; }
+.label { font-size: 12px; }
+.src { font-size: 13.5px; line-height: 1.55; }
+.muted { font-size: inherit; }
+h1.insight-line { font-size: clamp(24px, 2.1vw, 34px); line-height: 1.3; }
+.explain { font-size: 16px; }
+.chip-t { font-size: 15.5px; padding: 6px 10px; }
+.btn { font-size: 15.5px; padding: 10px 18px; }
+.field { font-size: 15.5px; }
+.search input { width: clamp(140px, 16vw, 240px); padding: 8px 30px 8px 10px; }
+.results button { font-size: 15.5px; }
+.tone p { font-size: 16px; line-height: 1.65; }
+.tone h4 { font-size: 16.5px; }
+.panel-h h2 { font-size: 17px; }
+.legend { font-size: 13px; }
+.map-tip { font-size: 14px; }
+.lead { font-size: 16.5px; line-height: 1.6; margin: 0; }
+.mini-h { font-size: 18px; margin: 6px 0 0; }
+
+.atlas {
+  min-height: 0; overflow: hidden; width: 100%; max-width: 2000px; margin: 0 auto;
+  display: grid; gap: 14px 18px; padding: 14px 18px;
+  grid-template-columns: minmax(400px, 38fr) minmax(0, 62fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "head map" "body map";
+}
+.atlas > * { min-width: 0; min-height: 0; }
+.a-head { grid-area: head; display: grid; gap: 8px; align-content: start; }
+.a-map { grid-area: map; }
+.a-body { grid-area: body; overflow: hidden; }
+.a-pane { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px 20px; display: grid; gap: 14px; align-content: start; }
+.crumbs-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.q-sel { padding: 6px 10px; font-size: 15px; max-width: 60%; }
+
+/* ציון גדול והתפלגות: הגרפיקה לפני הטקסט */
+.a-kpi { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: end; }
+.badge { display: flex; align-items: center; gap: 12px; }
+.badge-n { font-family: var(--mono); font-weight: 600; font-size: 46px; line-height: 1; padding: 8px 14px; }
+.badge-s { font-size: 15px; color: var(--ink-soft); max-width: 22ch; line-height: 1.45; }
+.a-hist { display: grid; gap: 0; justify-items: start; }
+.hist.small { height: 58px; width: 100%; max-width: 230px; }
+.hist .hist-x { font-size: 12px; }
+.hist .hist-n { font-size: 12px; }
+.street-name { font-size: clamp(30px, 3vw, 44px) !important; font-weight: 600 !important; }
+.prev-next { display: flex; gap: 6px; justify-self: end; }
+.prev-next .btn { padding: 8px 12px; font-size: 14.5px; }
+
+/* לשוניות הטור: תובנות במרקר, מעשים בירוק. סימן אחד, משמעות אחת. */
+.a-tabs { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: none; flex: 0 0 auto; }
+.a-tabs::-webkit-scrollbar { display: none; }
+.a-tab { flex: 0 0 auto; border: 0; background: none; font: inherit; font-size: 16.5px; padding: 13px 14px 10px; color: var(--ink-soft); border-bottom: 3px solid transparent; cursor: pointer; text-decoration: none; transition: color .15s, transform .15s; }
+.a-tab:hover { color: var(--ink); transform: translateY(-1px); }
+.a-tab[aria-selected="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+.a-tab.k-ins::before, .a-tab.k-act::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-inline-end: 7px; vertical-align: 1px; }
+.a-tab.k-ins::before { background: var(--marker); box-shadow: inset 0 0 0 1px #E8C400; }
+.a-tab.k-act::before { background: var(--canopy); }
+.a-tab.k-ins[aria-selected="true"] { border-bottom-color: #E8C400; }
+.a-tab.k-act[aria-selected="true"] { border-bottom-color: var(--canopy); }
+.sub-nav { padding: 0; margin-bottom: 8px; }
+
+/* שלוש התשובות בטור: אחת מתחת לשנייה, עם פס צבע לפי משמעות */
+.a-pane .answers { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.answer { padding: 12px 16px; gap: 4px; border-inline-start: 5px solid var(--rule); }
+.answer.k-good { border-inline-start-color: var(--canopy); }
+.answer.k-bad { border-inline-start-color: var(--brick); }
+.answer.k-gap { border-inline-start-color: var(--amber); }
+.answer .q { font-size: 14.5px; }
+.answer .big { font-size: clamp(22px, 1.9vw, 30px); }
+.answer .sub { font-size: 15px; line-height: 1.5; }
+.answer[aria-pressed="true"] { outline-width: 2px; }
+.lines p { margin: 0 0 8px; font-size: 16px; line-height: 1.65; }
+.lines p:last-child { margin-bottom: 0; }
+
+/* מפה: בורר צבע בכותרת, תוויות רבעים */
+.a-map .panel-h { align-items: center; padding: 10px 14px; }
+.color-sel { display: flex; align-items: center; gap: 8px; }
+.color-sel .field { padding: 6px 10px; font-size: 15px; }
+.under { font-size: 15.5px; padding: 8px 14px 10px; }
+.map-wrap .mark text { font-family: var(--font); paint-order: stroke; stroke: #fff; stroke-linejoin: round; cursor: pointer; }
+.map-wrap .mark .m-t { font-weight: 600; fill: var(--ink); }
+.map-wrap .mark .m-v { font-family: var(--mono); font-weight: 700; }
+.map-wrap .mark:hover .m-t { fill: var(--measure); }
+.legend .ramp, .legend .ticks { width: 200px; }
+.legend .ticks { font-size: 11.5px; }
+
+/* רשימות וטבלאות בגודל קריא */
+.row { min-height: 44px; font-size: 16px; grid-template-columns: 28px minmax(0, 1fr) 80px 44px; }
+.row .i { font-size: 12.5px; }
+.score-pill { font-size: 15px; padding: 3px 4px; }
+.pick { padding: 12px 18px; gap: 8px; background: #FBFBF9; }
+.pick-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pick h3 { font-size: 21px; display: flex; gap: 10px; align-items: center; }
+.pick h3 .score-pill { min-width: 44px; }
+.fam { grid-template-columns: 120px minmax(0, 1fr) 36px; font-size: 15px; }
+.fam .v { font-size: 13.5px; }
+.fams { display: grid; gap: 8px; }
+.rel-row { grid-template-columns: 150px minmax(0, 1fr) 44px; font-size: 15.5px; min-height: 40px; }
+.rel-row[aria-pressed="true"], .prof-row[aria-pressed="true"] { background: #F1F0EC; box-shadow: inset -3px 0 0 var(--ink); }
+.prof-row { font-size: 15.5px; min-height: 46px; }
+.prof-row small { font-size: 12.5px; }
+.prof-h { font-size: 12px; }
+.cmp-row { font-size: 15px; }
+.cmp-h, .cmp-row { grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1fr); }
+.cmp-cell small { font-size: 12.5px; }
+.tier { border-top-width: 4px; padding-top: 6px; }
+.tier .mini-h { margin-top: 2px; }
+.tier-item { font-size: 15.5px; gap: 4px; padding: 10px 0; }
+.chip-s { font-size: 14px; padding: 4px 10px; }
+.street-chips { margin-top: 4px; }
+.ptable { font-size: 15px; }
+.ptable th { font-size: 12px; }
+.ptable td { padding: 8px; }
+.detail { font-size: 15px; gap: 6px; }
+.ind-row { font-size: 15px; min-height: 40px; grid-template-columns: 38px minmax(0, 1fr) 80px 50px; padding: 0; }
+.ind-row .pts { font-size: 13.5px; }
+.street-acts { gap: 10px; }
+.street-acts p { font-size: 16px; }
+.ai-box { padding: 12px 0 0; background: none; border: 0; }
+.tiles { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); overflow: visible; }
+.tile .t-name { font-size: 16px; }
+.tile .t-score { font-size: 24px; }
+.tile .t-sub { font-size: 13.5px; }
+.tile { min-height: 200px; }
+.flow-row .src-card { min-width: 0; flex: 1 1 120px; }
+.flow-row .src-card.measured { border-color: var(--measure); }
+.flow-row .src-card.measured .big { color: var(--measure); }
+.gaps { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.gap { font-size: 15px; padding: 8px 0; border-bottom: 1px solid var(--rule-soft); }
+.act-card { font-size: 15.5px; }
+.method dl { font-size: 15px; }
+.method .card h3 { font-size: 18px; }
+.crit-top { font-size: 16px; }
+.ind-pill { font-size: 15px; }
+.matrix { font-size: 13.5px; }
+.prose p { font-size: 16px; line-height: 1.7; }
+
+@media (max-width: 1100px) {
+  .atlas { grid-template-columns: minmax(360px, 42fr) minmax(0, 58fr); }
+}
+@media (max-width: 900px) {
+  .atlas { overflow: visible; grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "map" "body"; padding: 10px 12px; gap: 10px; }
+  .a-map { height: 56vh; }
+  .a-body { overflow: visible; }
+  .a-pane { overflow: visible; padding: 12px 14px 16px; }
+  .shell { height: auto; min-height: 100dvh; overflow: visible; }
+  .a-map .panel-h { flex-wrap: wrap; }
+}
+@media (max-width: 560px) {
+  .badge-n { font-size: 38px; }
+  .a-kpi { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .prev-next { justify-self: start; }
+  .rel-row { grid-template-columns: 112px minmax(0, 1fr) 40px; }
+  .fam { grid-template-columns: 96px minmax(0, 1fr) 34px; }
+  .cmp-h, .cmp-row { grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr); }
+  .tab { padding: 14px 9px; font-size: 15px; }
+  .a-tab { padding: 12px 10px 9px; font-size: 15.5px; }
+  .legend { max-width: 75%; }
+  .legend .ramp, .legend .ticks { width: 150px; }
+}
+.hist.small .hist-x { font-size: 24px; }
+.map-wrap .mark .m-v { stroke: none; paint-order: normal; }
+.map-wrap .mark rect { cursor: pointer; }
+@media (max-width: 560px) {
+  .legend .muted { display: none; }
+  .legend { padding: 4px 8px; gap: 2px; }
+  .search input { width: 120px; }
+}
+.a-pane .tiles { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.a-pane .tile { min-height: 0; height: 172px; padding: 8px 10px; }
+.a-pane .tile svg { min-height: 0; }
+.a-pane .tile .t-score { font-size: 20px; }
+.a-pane .tile .t-sub { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a-pane .tile { min-width: 0; overflow: hidden; }
+.a-pane .tile .t-sub { display: block; min-width: 0; }
+@media (max-width: 900px) {
+  .a-map { height: 44vh; }
+  .a-body { height: 64vh; overflow: hidden; }
+  .a-pane { overflow: auto; }
+  .a-kpi { gap: 4px 12px; }
+}
+@media (max-width: 560px) {
+  .a-kpi { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+  .badge-s { font-size: 13.5px; }
+  .hist.small { height: 44px; }
+  .a-hist .src { display: none; }
+  .prev-next { grid-column: 1 / -1; }
+}
+.a-pane .tile { height: auto; grid-template-rows: auto 118px auto; }
+.a-pane .tile .t-sub { white-space: normal; overflow: visible; line-height: 1.35; }
+.method-top { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.method-top .prose { max-width: none; }
+.gis-card { display: grid; gap: 10px; border-top: 4px solid var(--measure); }
+.gis-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 15px; }
+.gf { padding: 6px 10px; background: #F1F0EC; font-weight: 600; }
+.gf-src { background: var(--measure); color: #fff; }
+.gf-out { background: var(--canopy); color: #fff; }
+.gf-a { color: var(--ink-mute); }
+@media (max-width: 1000px) { .method-top { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== גרפיקה בולטת (16.11.2026): ציור לכל תשובה, גלריית רחובות, סרגל ופס דירוג ===== */
+.sketch { width: 100%; height: 100%; display: block; direction: ltr; }
+.answer.has-art { grid-template-columns: minmax(0, 1fr) 112px; column-gap: 14px; }
+.answer.has-art > :not(.art) { grid-column: 1; }
+.answer .art { grid-column: 2; grid-row: 1 / span 3; width: 112px; height: 112px; align-self: center; background: #FBFBF9; box-shadow: inset 0 0 0 1px var(--rule-soft); padding: 4px; }
+.tier-item.has-art { grid-template-columns: minmax(0, 1fr) 96px; column-gap: 14px; }
+.tier-item.has-art > :not(.art) { grid-column: 1; }
+.tier-item .art { grid-column: 2; grid-row: 1 / span 4; width: 96px; height: 96px; align-self: start; background: #FBFBF9; padding: 3px; }
+.a-pane .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.a-pane .tile { grid-template-rows: auto 92px; padding: 6px 8px; }
+.a-pane .tile .t-name { font-size: 15px; }
+.a-pane .tile .t-score { font-size: 18px; }
+
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.g-cell { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 84px auto 4px; gap: 2px 6px; padding: 6px 8px 0; text-align: start; min-width: 0; }
+.g-cell .sketch { grid-column: 1 / -1; }
+.g-cell .g-name { font-size: 13.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.g-cell .g-i { font-size: 11px; color: var(--ink-mute); font-weight: 400; }
+.g-cell .g-v { font-size: 13.5px; color: var(--ink); }
+.g-cell .g-score { grid-column: 1 / -1; height: 4px; margin: 0 -8px; }
+.g-cell[aria-pressed="true"] { background: #fff; color: var(--ink); outline: 2px solid var(--ink); outline-offset: -2px; }
+.g-cell[aria-pressed="true"] .g-name { color: var(--ink); }
+.g-note { grid-column: 1 / -1; margin: 2px 0 0; }
+
+.graphs { display: grid; gap: 14px; }
+.graph { display: grid; gap: 4px; }
+.graph p { margin: 0; }
+.strip, .ruler { width: 100%; height: auto; display: block; }
+.strip .hist-x, .ruler .hist-x { font: 11px var(--mono); fill: var(--ink-mute); }
+.strip-l { font: 600 13px var(--font); fill: var(--ink); }
+.street-kpi { grid-template-columns: 96px auto minmax(0, 1fr); align-items: center; }
+.street-shape { width: 96px; height: 96px; background: #FBFBF9; box-shadow: inset 0 0 0 1px var(--rule-soft); padding: 4px; }
+@media (max-width: 560px) {
+  .answer.has-art { grid-template-columns: minmax(0, 1fr) 84px; }
+  .answer .art { width: 84px; height: 84px; }
+  .tier-item.has-art { grid-template-columns: minmax(0, 1fr) 72px; }
+  .tier-item .art { width: 72px; height: 72px; }
+  .a-pane .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .street-kpi { grid-template-columns: 72px auto; }
+  .street-shape { width: 72px; height: 72px; }
+}
+.street-kpi { grid-template-columns: 96px auto minmax(0, 1fr); }
+.street-kpi .prev-next { grid-column: 1 / -1; justify-self: start; }
+.prev-next .btn { white-space: nowrap; }
+.tier-item.has-art { grid-template-columns: minmax(0, 1fr) 110px; }
+.tier-item .art { width: 110px; height: 110px; }
+
+/* ===== תנועה בדף הבית (16.11.2026): נכנסת פעם אחת, לפי הנתון, ונעצרת ===== */
+.grow { transform-box: fill-box; transform-origin: 50% 100%; animation: grow .7s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.fade-in { animation: fadein .6s ease both; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.sketch .draw, .tile svg .draw { animation-duration: .9s; }
+.sweep { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 3; display: grid; justify-items: center; gap: 4px; background: rgba(255,255,255,.94); box-shadow: var(--shadow-1); padding: 8px 14px 10px; min-width: 260px; }
+.sweep-l { font-size: 13.5px; color: var(--ink-soft); }
+.sweep-v { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.sweep-sw { width: 14px; height: 14px; display: inline-block; }
+.sweep-bar { width: 100%; height: 3px; background: var(--rule-soft); position: relative; }
+.sweep-bar i { position: absolute; inset-block: 0; right: 0; background: var(--ink); }
+.sweep-btn { padding: 6px 14px; font-size: 14.5px; }
+@media (prefers-reduced-motion: reduce) {
+  .draw { stroke-dasharray: none !important; stroke-dashoffset: 0 !important; }
+  .grow { transform: none; }
+  .fade-in { opacity: 1; }
+}
+@media (max-width: 560px) { .sweep { min-width: 0; padding: 6px 10px; } .sweep-v { font-size: 15px; } }
+.sweep.done { top: auto; bottom: 44px; left: 12px; transform: none; min-width: 0; grid-auto-flow: column; align-items: center; gap: 10px; padding: 6px 10px; }
+.key-sw { display: inline-block; width: 18px; height: 5px; vertical-align: 3px; margin-inline-end: 6px; }
+.act-card { padding: 10px 0; }
+.act-card .act-top { display: flex; width: 100%; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 400; font-size: 16.5px; }
+.act-card .act-top strong { font-weight: 600; }
+.act-card.on { box-shadow: inset -4px 0 0 var(--brick); padding-inline-start: 12px; background: #FBF4F3; }
+.act-card .label { margin-inline-end: 6px; }
+.tier { gap: 4px; }
+
+/* ===== לוויין ומבט רחוב (16.11.2026) ===== */
+.map-tools .sat-btn { width: auto; padding: 0 8px; font-size: 13px; height: 30px; }
+.map-wrap.is-sat { background: #2B2B28; }
+.map-wrap.is-sat .ctx-case { stroke: rgba(0,0,0,.35); }
+.map-wrap.is-sat .ctx { stroke: rgba(255,255,255,.55); stroke-width: 2.5px; }
+.map-wrap.is-sat .street-case { stroke: #fff; stroke-opacity: .9; }
+.map-wrap.is-sat .lbl { stroke: rgba(255,255,255,.95); }
+.sat-credit { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #fff; background: rgba(0,0,0,.45); padding: 1px 6px; z-index: 2; white-space: nowrap; }
+.g-links { display: flex; gap: 6px; }
+.g-links .btn { text-decoration: none; text-align: center; white-space: nowrap; }
+.pick-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.street-kpi .prev-next { flex-wrap: wrap; }
+
+/* ===== כפתורים נבדלים: רקע אפור, בלי קו מסגרת (בקשת ענת, 16.11.2026) =====
+   כל מה שלוחצים עליו יושב על רקע אפור. הצורה נקראת מהרקע ומהצל, לא מקו. */
+:root { --btn: #ECEBE6; --btn-hover: #E2E0DA; --card-btn: #F6F5F1; }
+.press { border: 0; background: var(--btn); color: var(--ink); box-shadow: 0 1px 0 rgba(26,26,24,.10), 0 1px 3px rgba(26,26,24,.08); }
+.press:hover { background: var(--btn-hover); }
+.press[aria-pressed="true"], .press.is-on { background: var(--ink); color: #fff; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-weight: 500; }
+.ico { flex: 0 0 auto; display: inline-block; vertical-align: -3px; }
+/* כפתורים שהם כרטיסים (תשובה, רובע, רחוב בגלריה): רקע אפור בהיר, כדי שהציור ייקרא */
+.answer.press, .tile.press, .g-cell.press { background: var(--card-btn); }
+.answer.press:hover, .tile.press:hover, .g-cell.press:hover { background: #EFEEE9; }
+.answer[aria-pressed="true"] { background: #fff; color: var(--ink); }
+.g-cell[aria-pressed="true"] { background: #fff; }
+.answer .art, .street-shape, .tier-item .art { background: #fff; }
+/* כלי המפה */
+.map-tools button { display: grid; place-items: center; background: rgba(236,235,230,.96); }
+.map-tools .sat-btn { display: flex; gap: 5px; align-items: center; }
+/* לשוניות: אפור כשלא נבחרות, לבן עם קו כשנבחרות */
+.a-tabs { gap: 4px; padding: 8px 10px 0; background: #FAFAF8; }
+.a-tab { background: var(--btn); display: inline-flex; align-items: center; gap: 7px; border-bottom-width: 3px; }
+.a-tab:hover { background: var(--btn-hover); }
+.a-tab[aria-selected="true"] { background: #fff; box-shadow: 0 -1px 0 var(--rule) inset; }
+.a-tab.k-ins::before, .a-tab.k-act::before { content: none; }
+.a-tab.k-ins .ico { color: #B58F00; }
+.a-tab.k-act .ico { color: var(--canopy); }
+.tab { display: inline-flex; align-items: center; gap: 7px; }
+/* בחירה: רשימות נפתחות ושדות */
+.field { background: var(--btn); border: 0; box-shadow: 0 1px 0 rgba(26,26,24,.10); }
+.search input.field { background: #F3F2EE; }
+.link-btn { background: none; box-shadow: none; }
+.chip-s { background: var(--btn); }
+.g-links .btn, .prev-next .btn { gap: 6px; }
+.view-sw { display: flex; gap: 4px; }
+.view-sw .btn { padding: 6px 12px; font-size: 14.5px; }
+.q-frames { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; padding: 10px 14px 14px; align-content: start; }
+.q-frame { display: grid; grid-template-rows: auto 150px auto; gap: 4px; padding: 8px 10px; text-align: start; background: var(--card-btn); }
+.q-frame.sel { outline: 2px solid var(--ink); outline-offset: -2px; background: #fff; }
+.q-frame .sketch { background: #fff; }
+.qf-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.qf-name { font-weight: 600; font-size: 15.5px; }
+.qf-n { font-family: var(--mono); font-weight: 700; font-size: 14px; padding: 1px 8px; }
+.qf-sub { font-size: 13px; color: var(--ink-soft); }
+.q-frames-note { grid-column: 1 / -1; margin: 0; }
+.map-tools { direction: ltr; justify-items: start; }
+.sweep-v .val { font-family: var(--mono); font-weight: 600; }
+@media (max-width: 560px) { .topbar .tab .ico { display: none; } }
+
+/* ===== מצב שטח (17.11.2026): כל מדידה מול המציאות ===== */
+.field-check { display: grid; gap: 10px; }
+.fc-head { display: grid; gap: 6px; }
+.fc-head p { margin: 0; }
+.fc-progress { display: grid; gap: 4px; }
+.fc-progress .bar { height: 8px; }
+.bad-t { color: var(--brick); }
+.fc-row { display: grid; gap: 6px; padding: 10px 12px; background: #FBFBF9; border-inline-start: 4px solid var(--rule); }
+.fc-row.m-ok { border-inline-start-color: var(--canopy); }
+.fc-row.m-no { border-inline-start-color: var(--brick); background: #FBF4F3; }
+.fc-row.m-unsure { border-inline-start-color: #E8C400; }
+.fc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 16px; }
+.fc-top .score-pill { min-width: 40px; }
+.fc-val { font-size: 15px; color: var(--ink-soft); }
+.fc-val .val { font-family: var(--mono); font-weight: 600; color: var(--ink); }
+.fc-marks { display: flex; gap: 6px; flex-wrap: wrap; }
+.fc-marks .btn { padding: 6px 14px; font-size: 14.5px; }
+.fc-marks .mk-ok[aria-pressed="true"] { background: var(--canopy); }
+.fc-marks .mk-no[aria-pressed="true"] { background: var(--brick); }
+.fc-marks .mk-unsure[aria-pressed="true"] { background: #B58F00; }
+.fc-note { width: 100%; padding: 8px 10px; }
+.fc-foot { display: grid; gap: 4px; justify-items: start; padding-top: 4px; }
+.fc-intro { margin: 0; }
+.fc-val .val { font-family: inherit; font-weight: 600; }
+.a-tabs { gap: 3px; padding-inline: 8px; }
+.a-tab { padding: 12px 11px 9px; gap: 6px; }
+
+.film { margin: 0 0 16px; padding: 0; }
+.film video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: contain; border: 1px solid var(--rule); background: #1F2A24; }
+.film figcaption { padding: 10px 14px; font-size: 15px; }
+
+/* דף פתיחה: סרטון גדול משמאל (61.8%), חזון, מטרה וכלי מימין (38.2%), ושלוש תובנות בשורה */
+.body.intro { display: grid; grid-template-rows: none; align-content: start; gap: 14px 18px;
+  grid-template-columns: minmax(0, 38.2fr) minmax(0, 61.8fr); grid-template-areas: "head head" "side film"; }
+.intro-head { grid-area: head; }
+.intro-head h1 { margin: 2px 0 0; font-size: clamp(26px, 3vw, 40px); }
+.intro-film { grid-area: film; margin: 0; align-self: start; }
+.intro-side { grid-area: side; display: grid; align-content: start; gap: 2px; }
+.pillar { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.pillar .label { display: block; margin-bottom: 4px; }
+.pillar p { margin: 0; font-size: clamp(18px, 1.5vw, 21px); font-weight: 600; line-height: 1.35; }
+.pillar p.src { font-size: 13.5px; font-weight: 400; margin-top: 4px; }
+.intro-cta { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 14px; }
+.btn-main { background: var(--ink); color: #fff; }
+.btn-main:hover { color: #fff; }
+.facts { display: grid; gap: 8px; padding-top: 14px; }
+.fact { display: grid; grid-template-columns: minmax(78px, auto) minmax(0, 1fr); column-gap: 14px; align-items: center; padding: 8px 14px; background: var(--sheet); border: 1px solid var(--rule); }
+.fact .fact-n { grid-row: 1 / span 2; }
+.fact-n { font-family: var(--mono); font-size: clamp(30px, 3vw, 40px); font-weight: 600; line-height: 1; }
+.fact p { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+@media (max-width: 900px) {
+  .body.intro { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "film" "side"; padding: 10px 12px; }
+}
+
+/* מפת העיר: מתג מפה / רבעים, בחירת רובע וצבע, והרבעים בריבועים */
+.panel-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.panel-tools .q-sel { max-width: none; }
+.q-frames.sq { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.q-frames.sq .q-frame { grid-template-rows: auto minmax(0, 1fr) auto; aspect-ratio: 1 / 1; }
+
+/* נייד: הכותרת של לוח המפה נשברת לשלוש שורות, ו-44vh השאירו למפה כ-170 פיקסלים, עם כיתוב, מקרא וזום זה על זה (25.11.2026).
+   המפה מקבלת גובה משלה, ושורת הסיום של התנועה עולה למעלה, בין הזום לחץ הצפון, הרחק מהמקרא ומקנה המידה. */
+@media (max-width: 560px) {
+  .a-map { height: auto; display: flex; flex-direction: column; }
+  .a-map .map-wrap { flex: none; height: max(360px, 62vh); }
+  .sweep.done { top: 8px; bottom: auto; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 132px); grid-auto-flow: row; justify-items: center; gap: 4px; }
+  .sweep.done .sweep-l { font-size: 12.5px; text-align: center; }
+  .sweep.done .sweep-btn { padding: 4px 10px; font-size: 13px; }
+  .sweep { max-width: calc(100% - 132px); }
+}
+@media (max-width: 560px) {
+  .sweep-l, .sweep-v { white-space: nowrap; }
+  .sweep-l { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .sweep-v { font-size: 13.5px; }
+  .sweep.done .sweep-l { white-space: normal; }
+}
+@media (max-width: 380px) {
+  .legend .ramp, .legend .ticks { width: 112px; }
+  .legend { font-size: 11.5px; }
+}
 
 /* תוכנית העבודה: מפת עבודה רובע מול נושא, תרחיש השפעה, שלבים והחלטות */
 .wp-steps { display: grid; gap: 6px; margin: 6px 0 8px; }

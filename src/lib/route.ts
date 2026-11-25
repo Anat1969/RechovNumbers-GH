@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 // המצב נשמר בכתובת (hash): דף, רובע, רחוב ושכבת צבע. "העתקת קישור" פותחת את אותו מצב.
-export interface Route { page: 'home' | 'quarter' | 'street' | 'cross' | 'method' | 'actions' | 'plan'; id?: string; q: URLSearchParams }
+export interface Route { page: 'intro' | 'home' | 'quarter' | 'street' | 'cross' | 'method' | 'actions' | 'plan'; id?: string; q: URLSearchParams }
 
 export function parse(hash = location.hash): Route {
   const [path, qs] = hash.replace(/^#/, '').split('?');
@@ -13,7 +13,8 @@ export function parse(hash = location.hash): Route {
   if (parts[0] === 'm') return { page: 'method', q };
   if (parts[0] === 'a') return { page: 'actions', q };
   if (parts[0] === 'w') return { page: 'plan', q };
-  return { page: 'home', q };
+  if (parts[0] === 'city') return { page: 'home', q };
+  return { page: 'intro', q };
 }
 
 export function go(hash: string) { if (location.hash !== hash) location.hash = hash; }

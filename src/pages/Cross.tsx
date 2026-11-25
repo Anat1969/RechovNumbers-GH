@@ -4,6 +4,7 @@ import { CRITERIA, CROSS, FAMILIES, type Criterion } from '../data/criteria';
 import { CHAPTERS, CHAPTER_HEX, CHAPTER_META, INDICATORS, TOPICS, TOTAL_MAX, type Indicator } from '../data/indicators';
 import { setParam, type Route } from '../lib/route';
 import Rich from '../components/Rich';
+import { MethodNav } from '../components/Read';
 
 type View = 'matrix' | 'crit' | 'ind';
 const VIEWS: [View, string][] = [['matrix', 'מטריצה'], ['crit', 'פירוק לפי עיקרון'], ['ind', 'פירוק לפי מדד']];
@@ -50,6 +51,7 @@ export default function Cross({ model, route }: { model: Model; route: Route }) 
     <main className="body" style={{ gridTemplateRows: 'auto auto minmax(0,1fr)' }}>
       <div className="head">
         <div>
+          <MethodNav cur="x" />
           <Rich as="h1" className="insight-line">{`==חצי מהניקוד של שכונה 360 נקבע ברחוב.==`}</Rich>
           <Rich as="p" className="explain">{`**${cross.touched.length}** מתוך **44** מדדים נוגעים בעקרונות הרחוב הטוב, ושווים **${cross.points}** מתוך **${TOTAL_MAX}** נקודות. היום נמדדים **${model.measuredInd.length}** מהם.`}</Rich>
         </div>

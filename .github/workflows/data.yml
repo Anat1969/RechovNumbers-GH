@@ -2,6 +2,7 @@ name: refresh-data
 # מושך את המדדים המחושבים מ-ASHDODMAP לתמונה השמורה (public/data/snapshot.json).
 on:
   push:
+    branches: [main]
     paths: ['scripts/fetch-snapshot.mjs', '.github/workflows/data.yml']
   schedule:
     - cron: '17 3 * * 1'
@@ -10,6 +11,8 @@ permissions:
   contents: write
 jobs:
   snapshot:
+    # רק על main: ריצה על ענף ישן יצרה ענפי נתונים כפולים שלא היה מה למזג (23.11.2026).
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

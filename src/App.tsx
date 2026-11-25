@@ -6,6 +6,7 @@ import { QMAP } from './data/quarters';
 import TopBar from './components/TopBar';
 import type { MenuItem } from './components/AIMenu';
 import Home from './pages/Home';
+import Intro from './pages/Intro';
 import Quarter from './pages/Quarter';
 import StreetPage from './pages/StreetPage';
 import Cross from './pages/Cross';
@@ -66,17 +67,18 @@ export default function App() {
   const status = data ? (data.source === 'live' ? 'נתונים חיים' : 'תמונה שמורה') : '';
 
   let page;
-  if (!model) page = <main className="body"><div className="loading">{failed ? 'הנתונים לא נטענו. בדקו את החיבור ורעננו את הדף.' : 'טוען 525 רחובות...'}</div></main>;
+  if (!model) page = <main className="body"><div className="loading">{failed ? 'הנתונים לא נטענו. בדקו את החיבור ורעננו את הדף.' : 'טוען את הרחובות...'}</div></main>;
   else if (route.page === 'quarter') page = <Quarter model={model} route={route} />;
   else if (route.page === 'street') page = <StreetPage model={model} route={route} />;
   else if (route.page === 'cross') page = <Cross model={model} route={route} />;
   else if (route.page === 'actions') page = <Actions model={model} route={route} />;
   else if (route.page === 'plan') page = <WorkPlan model={model} route={route} />;
   else if (route.page === 'method') page = <Method model={model} takenAt={data!.taken_at} source={data!.source} />;
-  else page = <Home model={model} />;
+  else if (route.page === 'home') page = <Home model={model} route={route} />;
+  else page = <Intro model={model} />;
 
   return (
-    <div className="shell" style={route.page === 'quarter' ? undefined : { gridTemplateRows: 'auto minmax(0,1fr)' }}>
+    <div className="shell">
       <TopBar route={route} model={model} menu={menu} status={status} />
       {page}
     </div>

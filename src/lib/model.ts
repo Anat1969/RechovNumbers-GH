@@ -7,7 +7,8 @@ export interface Metrics {
   shop100?: number; cross100?: number; bench100?: number; tree100?: number; lamp100?: number;
   bus300?: number; busdist?: number; parkdist?: number; svc400?: number; edu400?: number;
   class?: string; maxspeed?: number; lanes?: number; cycle?: boolean; sidewalk?: boolean;
-  geo?: 'outside' | 'trimmed';
+  geo?: 'outside' | 'trimmed' | 'nogeometry' | 'short';
+  geosrc?: 'osm';
   plan?: { id: string; title: string; status: string; number: string | null; points: number | null; street?: Record<string, number | null> };
   votes?: { n: number; avg: number };
 }
@@ -20,6 +21,8 @@ export const MIN_LEN = 120;
 
 /** למה רחוב לא מקבל ציון. null = מדורג. */
 export function unranked(m: Metrics): string | null {
+  if (m.geo === 'nogeometry') return 'הרחוב ברשימת העירייה, אבל אין לו קו במפת OSM ולא נמצאה דרך בשם הזה, ולכן לא נמדד. הוספת הרחוב ל-OSM תכניס אותו לציון.';
+  if (m.geo === 'short' && !m.len) return 'הרחוב ברשימת העירייה, אבל הקו שלו קצר מ-40 מ\', ולכן לא נמדד.';
   if (m.geo === 'outside') return 'קו הרחוב שנמצא במפה רחוק מהרובע שהעירייה שייכה אליו. כנראה רחוב אחר באותו שם, ולכן הוא לא מדורג.';
   if ((m.len ?? 0) < MIN_LEN) return `הקטע שנמדד קצר מ-${MIN_LEN} מ', ולכן הוא לא מדורג.`;
   return null;
@@ -170,9 +173,10 @@ const pct = (sorted: number[], v: number) => {
 
 export function buildModel(raw: Street[]): Model {
   const stats: Record<string, ParamStat> = {};
+  const measured = raw.filter((s) => s.m.geo !== 'nogeometry' && !(s.m.geo === 'short' && !s.m.len));
   for (const p of PARAMS) {
-    const vals = raw.map((s) => p.read(s.m)).filter((v): v is number => v != null).sort((a, b) => a - b);
-    const coverage = raw.length ? raw.filter((s) => p.present(s.m)).length / raw.length : 0;
+    const vals = measured.map((s) => p.read(s.m)).filter((v): v is number => v != null).sort((a, b) => a - b);
+    const coverage = measured.length ? measured.filter((s) => p.present(s.m)).length / measured.length : 0;
     stats[p.key] = { key: p.key, coverage, enters: coverage >= COVERAGE_MIN && !p.displayOnly, sorted: vals };
   }
   const entering = PARAMS.filter((p) => stats[p.key].enters);

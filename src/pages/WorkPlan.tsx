@@ -68,7 +68,7 @@ export default function WorkPlan({ model, route }: { model: Model; route: Route 
     <main className="body scroll wp">
       <div className="head">
         <div>
-          <p className="crumbs"><a href="#/">אשדוד</a> / תוכנית עבודה · הצעה למהנדס העיר, לאישור המנכ"ל</p>
+          <p className="crumbs"><a href="#/city">אשדוד</a> / תוכנית עבודה · הצעה למהנדס העיר, לאישור המנכ"ל</p>
           <Rich as="h1" className="insight-line">{`==שלושה שלבים מעלים את ממוצע העיר מ-**${steps[0].avg}** ל-**${steps[3].avg}**.==`}</Rich>
           <Rich as="p" className="explain">{`**${steps[0].below - steps[3].below}** רחובות יוצאים מתחת ל-**50**. מתחילים ב**${first?.p.label ?? 'נושא הראשון'}**, זול ומהיר, וממשיכים לפי הנקודות על הכף.`}</Rich>
         </div>
