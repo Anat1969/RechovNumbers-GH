@@ -55,6 +55,9 @@ async function mock(p) {
     await p.locator('.wp-th button').first().click();
     ok((await p.locator('#wp-dt').innerText()).includes('תוכנית האגף'), 'תוכנית עבודה: לחיצה על נושא פותחת את תוכנית האגף');
     ok(await p.locator('.wp-dec li').count() >= 5, 'תוכנית עבודה: ההחלטות המבוקשות מהמנכ"ל');
+    ok(await p.locator('.wp-layer').count() >= 6, 'תוכנית עבודה: השכבות החסרות לפני המפה');
+    ok(await p.locator('.wp-ti .wp-map svg path').count() > 100 && await p.locator('.wp-ti').count() === await p.locator('.wp-th').count() - 1, 'תוכנית עבודה: מפה לכל מבצע בלוח הזמנים');
+    ok((await p.locator('#wp-ly').locator('..').innerText()).includes('לא ידוע'), 'תוכנית עבודה: רחוב בלי נתון הוא "לא ידוע", לא "חסר"');
     await p.goto(BASE + '#/city', { waitUntil: 'networkidle' });
     await p.waitForSelector('.atlas .map-wrap path.street');
     ok(await p.locator('ai-menu .logo').isVisible(), 'כפתור הלוגו A&I בסרגל');
