@@ -34,6 +34,14 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const nav = useRef<HTMLElement>(null);
+  // בנייד שורת הלשוניות גוללת: הלשונית הפעילה תמיד בתוך המסך
+  useEffect(() => {
+    const el = nav.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    const n = nav.current;
+    if (!el || !n || n.scrollWidth <= n.clientWidth) return;
+    n.scrollLeft += el.getBoundingClientRect().left - n.getBoundingClientRect().left - (n.clientWidth - el.offsetWidth) / 2;
+  }, [route.page]);
 
   const hits = useMemo(() => {
     const t = q.trim();
@@ -51,6 +59,7 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
     ['פתיחה', '#/', ['intro'], 'bulb'],
     ['מפה', '#/city', ['home', 'quarter', 'street'], 'map'],
     ['פעולות', '#/a', ['actions'], 'act'],
+    ['תוכנית עבודה', '#/w', ['plan'], 'list'],
     ['איך מודדים', '#/m', ['method', 'cross'], 'ruler'],
   ];
 
@@ -61,7 +70,7 @@ export default function TopBar({ route, model, menu, status }: { route: Route; m
           <AppIcon />
           <span>רחוב טוב <b>במספרים</b></span>
         </a>
-        <nav className="tabs" aria-label="ניווט">
+        <nav className="tabs" aria-label="ניווט" ref={nav}>
           {tabs.map(([label, href, pages, ic]) => (
             <button key={label} className="tab" aria-current={pages.includes(route.page) ? 'page' : undefined} onClick={() => go(href)}><Icon n={ic} size={17} />{label}</button>
           ))}

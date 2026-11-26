@@ -46,6 +46,20 @@ async function mock(p) {
     ok(await p.locator('.a-tab.k-ins[aria-selected="true"]').count() === 1, 'תובנות היא הלשונית הראשונה');
     const fs17 = await p.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
     ok(fs17 >= 17, `גופן בסיס ${fs17}px`);
+    // תוכנית העבודה: מפת עבודה, תרחיש, שני צירים והחלטות
+    await p.goto(BASE + '#/w', { waitUntil: 'networkidle' });
+    await p.waitForSelector('.wp-mx');
+    ok((await p.locator('h1').innerText()).includes('שלושה שלבים'), 'תוכנית עבודה: שורת התובנה מהתרחיש');
+    ok(await p.locator('.wp-mx tbody tr').count() >= 10, 'תוכנית עבודה: שורה לכל רובע במפת העבודה');
+    ok(await p.locator('.wp-steps').first().locator('.wp-step').count() === 4, 'תוכנית עבודה: ארבעה צעדים בתרחיש');
+    await p.locator('.wp-th button').first().click();
+    ok((await p.locator('#wp-dt').innerText()).includes('תוכנית האגף'), 'תוכנית עבודה: לחיצה על נושא פותחת את תוכנית האגף');
+    ok(await p.locator('.wp-dec li').count() >= 5, 'תוכנית עבודה: ההחלטות המבוקשות מהמנכ"ל');
+    ok(await p.locator('.wp-layer').count() >= 6, 'תוכנית עבודה: השכבות החסרות לפני המפה');
+    ok(await p.locator('.wp-ti .wp-map svg path').count() > 100 && await p.locator('.wp-ti').count() === await p.locator('.wp-th').count() - 1, 'תוכנית עבודה: מפה לכל מבצע בלוח הזמנים');
+    ok((await p.locator('#wp-ly').locator('..').innerText()).includes('לא ידוע'), 'תוכנית עבודה: רחוב בלי נתון הוא "לא ידוע", לא "חסר"');
+    await p.goto(BASE + '#/city', { waitUntil: 'networkidle' });
+    await p.waitForSelector('.atlas .map-wrap path.street');
     ok(await p.locator('ai-menu .logo').isVisible(), 'כפתור הלוגו A&I בסרגל');
     ok(!(await p.locator('header >> text=העתקת קישור').first().isVisible().catch(() => false)), 'אין כפתורי פיתוח חופשיים בסרגל');
     ok(await p.locator('.num').count() > 10, 'מספרים מודגשים אוטומטית');
